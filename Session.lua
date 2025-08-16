@@ -51,6 +51,12 @@ function PrintStats()
   PPTPrint("Avg/Success:", coinsToString(avgPerSuccess))
 end
 
+-- Reset all saved statistics
+function ResetAllStats()
+  PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems = 0,0,0,0
+  PPT_ItemCounts = {}
+end
+
 -- End-of-session block with headers like /pp
 function PrintSessionSummary()
   PPTPrint("----- Stealth Report -----")

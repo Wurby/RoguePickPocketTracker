@@ -142,8 +142,7 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPT_ShowMsg = not PPT_ShowMsg
     PPTPrint("showMsg =", tostring(PPT_ShowMsg)); return
   elseif msg == "reset" then
-    PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems = 0,0,0,0
-    PPT_ItemCounts = {}
+    ResetAllStats()
     PPTPrint("Stats reset."); return
   elseif msg == "debug" then
     PPT_Debug = not PPT_Debug
