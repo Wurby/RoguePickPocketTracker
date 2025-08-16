@@ -1,0 +1,75 @@
+name: CurseForge Package
+
+on:
+  push:
+    tags:
+      - '*'
+  repository_dispatch:
+    types: [curseforge-package]
+
+jobs:
+  curseforge:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Package for CurseForge
+      id: package
+      run: |
+        # Determine release type based on tag
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          TAG=${GITHUB_REF#refs/tags/}
+          if [[ $TAG == *"alpha"* ]]; then
+            RELEASE_TYPE="alpha"
+          elif [[ $TAG == *"beta"* ]]; then
+            RELEASE_TYPE="beta"
+          else
+            RELEASE_TYPE="release"
+          fi
+        else
+          RELEASE_TYPE="alpha"
+          TAG=$(git rev-parse --short HEAD)
+        fi
+        
+        echo "TAG=$TAG" >> $GITHUB_OUTPUT
+        echo "RELEASE_TYPE=$RELEASE_TYPE" >> $GITHUB_OUTPUT
+        
+        # Create addon package
+        PACKAGE_NAME="RoguePickPocketTracker"
+        mkdir -p "$PACKAGE_NAME"
+        
+        # Copy all addon files
+        cp *.lua *.toc "$PACKAGE_NAME/"
+        
+        # Process .pkgmeta if it exists (CurseForge will handle this automatically)
+        if [ -f ".pkgmeta" ]; then
+          cp .pkgmeta "$PACKAGE_NAME/"
+        fi
+        
+        # Replace version tokens
+        find "$PACKAGE_NAME" -name "*.toc" -exec sed -i "s/@project-version@/$TAG/g" {} \;
+        find "$PACKAGE_NAME" -name "*.lua" -exec sed -i "s/@project-version@/$TAG/g" {} \;
+        
+        # Create zip
+        zip -r "$PACKAGE_NAME-$TAG.zip" "$PACKAGE_NAME/"
+        
+        echo "PACKAGE_FILE=$PACKAGE_NAME-$TAG.zip" >> $GITHUB_OUTPUT
+        
+    - name: Upload to CurseForge
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      uses: itsmeow/curseforge-upload@v3
+      with:
+        token: ${{ secrets.CURSEFORGE_TOKEN }}
+        project_id: ${{ secrets.CURSEFORGE_PROJECT_ID }}
+        game_endpoint: wow
+        file_path: ${{ steps.package.outputs.PACKAGE_FILE }}
+        changelog: |
+          Automated release for version ${{ steps.package.outputs.TAG }}
+          
+          For detailed changes, see: https://github.com/${{ github.repository }}/releases/tag/${{ steps.package.outputs.TAG }}
+        release_type: ${{ steps.package.outputs.RELEASE_TYPE }}
+        game_versions: "1.15.4,1.15.3,1.15.2"  # WoW Classic Era versions

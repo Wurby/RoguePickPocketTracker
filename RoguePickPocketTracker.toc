@@ -1,6 +1,8 @@
 ## Interface: 110200
 ## Title: RoguePickPocketTracker
 ## Notes: Keeps track of total money looted from pickpocketing.
+## Author: Wurby
+## Version: @project-version@
 ## SavedVariables: PPT_ShowMsg, PPT_Debug, PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems, PPT_ItemCounts
 
 Core.lua

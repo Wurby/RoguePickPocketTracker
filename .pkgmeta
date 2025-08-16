@@ -1,0 +1,20 @@
+package-as: RoguePickPocketTracker
+
+# Enable creation of a -nolib version
+enable-nolib-creation: no
+
+# Files and directories to ignore during packaging
+ignore:
+  - .git
+  - .github
+  - .gitignore
+  - README.md
+  - .pkgmeta
+
+# Optional: Include license file
+# license-output: LICENSE.txt
+
+# Manual override for changelog (optional)
+# manual-changelog: |
+#   - Fixed issue with options panel
+#   - Added slash command /pp options

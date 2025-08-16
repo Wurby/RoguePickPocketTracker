@@ -1,5 +1,96 @@
 # RoguePickPocketTracker
 
+A World of Warcraft Classic addon that tracks pickpocketing statistics and loot for rogues.
+
+## Features
+
+- Tracks total copper earned from pickpocketing
+- Counts successful and failed pickpocket attempts
+- Records items obtained through pickpocketing
+- Provides detailed statistics and averages
+- Options panel for configuration
+- Slash commands for quick access
+
+## Slash Commands
+
+- `/pp` - Show statistics and help
+- `/pp options` - Open the options panel
+- `/pp togglemsg` - Toggle loot messages
+- `/pp reset` - Reset all statistics
+- `/pp debug` - Toggle debug mode
+- `/pp items` - Show cumulative item counts
+
+## Installation
+
+1. Download the latest release
+2. Extract to your `World of Warcraft\_classic_era_\Interface\AddOns\` directory
+3. Restart WoW or reload UI (`/reload`)
+
+## Development Setup
+
+### Automatic Releases
+
+This addon uses GitHub Actions for automatic packaging and release:
+
+#### GitHub Releases
+- Triggered automatically when you push a git tag
+- Creates a packaged zip file
+- Uploads to GitHub releases
+
+#### CurseForge Integration (Optional)
+To enable automatic CurseForge uploads:
+
+1. **Get your CurseForge API Token:**
+   - Go to [CurseForge API Tokens](https://www.curseforge.com/account/api-tokens)
+   - Create a new token named "GitHub Actions"
+
+2. **Get your Project ID:**
+   - Go to your CurseForge project page
+   - Find the Project ID in the "About This Project" section
+
+3. **Set up GitHub Secrets:**
+   - Go to your GitHub repository → Settings → Secrets and variables → Actions
+   - Add these secrets:
+     - `CURSEFORGE_TOKEN`: Your CurseForge API token
+     - `CURSEFORGE_PROJECT_ID`: Your CurseForge project ID
+
+4. **Set up CurseForge Webhook (Alternative):**
+   - Go to your GitHub repository → Settings → Webhooks
+   - Add webhook with URL: `https://www.curseforge.com/api/projects/{projectID}/package?token={token}`
+   - Replace `{projectID}` and `{token}` with your values
+   - Set Content Type to `application/json`
+   - Select "Just the push event"
+
+### Release Process
+
+1. **For Alpha/Beta releases:**
+   ```bash
+   git tag v1.0.0-alpha1
+   git push origin v1.0.0-alpha1
+   ```
+
+2. **For stable releases:**
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+The automation will:
+- Package the addon files
+- Replace version tokens (like `@project-version@`)
+- Create appropriate release type based on tag name
+- Upload to GitHub releases
+- Upload to CurseForge (if configured)
+
+## File Structure
+
+- `Core.lua` - Global state, constants, and utility functions
+- `Session.lua` - Session management and statistics tracking
+- `Events.lua` - Event handling and slash commands
+- `Options.lua` - Interface options panel
+- `RoguePickPocketTracker.toc` - Addon metadata
+- `.pkgmeta` - Packaging configuration for automated releases
+
 A World of Warcraft addon that tracks pickpocketing statistics for Rogue characters, including total money looted, success rates, and items obtained.
 
 ## Features
