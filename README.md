@@ -74,7 +74,7 @@ The addon saves the following variables automatically:
 
 ## Requirements
 
-- World of Warcraft (tested with Interface version 11302)
+ - World of Warcraft (tested with Interface version 110200)
 - Rogue character class (addon is designed specifically for rogues)
 
 ## Troubleshooting
