@@ -156,10 +156,44 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     table.sort(lines, function(a,b) return a:lower() < b:lower() end)
     for _,ln in ipairs(lines) do PPTPrint(" ", ln) end
     return
+  elseif msg == "options" then
+    -- Open options panel (Classic Era compatible)
+    local panel = _G.RoguePickPocketTrackerOptions
+    if panel then
+      -- Try multiple approaches to open the specific panel
+      if InterfaceOptionsFrame_OpenToCategory then
+        InterfaceOptionsFrame_OpenToCategory(panel)
+      elseif InterfaceOptionsFrame_OpenToPanel then
+        InterfaceOptionsFrame_OpenToPanel(panel)
+      elseif Settings and Settings.OpenToCategory then
+        if _G.PPT_SettingsCategory then
+          Settings.OpenToCategory(_G.PPT_SettingsCategory)
+        elseif panel.settingsCategory then
+          Settings.OpenToCategory(panel.settingsCategory)
+        else
+          SettingsPanel:Open()
+        end
+      else
+        -- Direct approach - show interface options and our panel
+        if InterfaceOptionsFrame then
+          InterfaceOptionsFrame:Show()
+          -- Force show our panel on top
+          panel:SetParent(InterfaceOptionsFramePanelContainer)
+          panel:Show()
+        elseif SettingsPanel then
+          SettingsPanel:Open()
+          panel:Show()
+        end
+      end
+    else
+      PPTPrint("Error: Options panel not found!")
+    end
+    PPTPrint("Opening options panel...")
+    return
   end
 
   PPTPrint("----- Totals -----");  PrintTotal()
   PPTPrint("----- Stats -----");   PrintStats()
-  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, reset, debug, items]")
+  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, reset, debug, items, options]")
 end
 

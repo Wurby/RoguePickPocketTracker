@@ -70,5 +70,18 @@ end
 
 panel:SetScript("OnShow", function(self) self:updateStats() end)
 
-InterfaceOptions_AddCategory(panel)
+-- Make panel globally accessible
+_G.RoguePickPocketTrackerOptions = panel
+
+-- Register with interface options (Classic Era method)
+if InterfaceOptions_AddCategory then
+  InterfaceOptions_AddCategory(panel)
+elseif Settings and Settings.RegisterCanvasLayoutCategory then
+  local category, layout = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
+  if category then
+    Settings.RegisterAddOnCategory(category)
+    panel.settingsCategory = category
+    _G.PPT_SettingsCategory = category
+  end
+end
 
