@@ -6,6 +6,10 @@ on:
       - '*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -44,27 +48,31 @@ jobs:
         echo "PACKAGE_FILE=$PACKAGE_NAME.zip" >> $GITHUB_OUTPUT
         echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_OUTPUT
         
+        # Determine if this is a prerelease
+        if [[ $VERSION == *"alpha"* ]] || [[ $VERSION == *"beta"* ]]; then
+          echo "PRERELEASE=true" >> $GITHUB_OUTPUT
+        else
+          echo "PRERELEASE=false" >> $GITHUB_OUTPUT
+        fi
+        
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
-      uses: actions/create-release@v1
+      run: |
+        # Create release using GitHub CLI
+        if [[ "${{ steps.package.outputs.PRERELEASE }}" == "true" ]]; then
+          gh release create "${{ steps.package.outputs.VERSION }}" \
+            --title "Release ${{ steps.package.outputs.VERSION }}" \
+            --notes "Automated release for version ${{ steps.package.outputs.VERSION }}" \
+            --prerelease \
+            "${{ steps.package.outputs.PACKAGE_FILE }}"
+        else
+          gh release create "${{ steps.package.outputs.VERSION }}" \
+            --title "Release ${{ steps.package.outputs.VERSION }}" \
+            --notes "Automated release for version ${{ steps.package.outputs.VERSION }}" \
+            "${{ steps.package.outputs.PACKAGE_FILE }}"
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.package.outputs.VERSION }}
-        release_name: Release ${{ steps.package.outputs.VERSION }}
-        draft: false
-        prerelease: ${{ contains(steps.package.outputs.VERSION, 'alpha') || contains(steps.package.outputs.VERSION, 'beta') }}
-        
-    - name: Upload Release Asset
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ steps.package.outputs.PACKAGE_FILE }}
-        asset_name: ${{ steps.package.outputs.PACKAGE_FILE }}
-        asset_content_type: application/zip
         
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
