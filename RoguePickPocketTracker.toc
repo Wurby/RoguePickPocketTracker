@@ -1,4 +1,4 @@
-## Interface: 110200
+## Interface: 30403
 ## Title: RoguePickPocketTracker
 ## Notes: Keeps track of total money looted from pickpocketing.
 ## Author: Wurby
