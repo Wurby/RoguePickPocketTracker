@@ -125,7 +125,8 @@ function ShareSummaryAndStats(force, summary)
   local ch, target = getLastChatTarget()
   if not ch then return end
   for _,m in ipairs(buildShareMessages(summary or PPT_LastSummary)) do
-    SendChatMessage(m, ch, nil, target)
+    -- "|" must be escaped as "||" to avoid item-link parsing in chat
+    SendChatMessage(m:gsub("|", "||"), ch, nil, target)
   end
 end
 
