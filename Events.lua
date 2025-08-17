@@ -81,6 +81,11 @@ frame:SetScript("OnEvent", function(_, event, ...)
       if dstGUID and not attemptedGUIDs[dstGUID] then
         attemptedGUIDs[dstGUID] = true
         PPT_TotalAttempts = PPT_TotalAttempts + 1
+        local zone = getCurrentZone()
+        sessionZone = zone
+        local zs = PPT_ZoneStats[zone] or {attempts=0, successes=0, copper=0}
+        zs.attempts = (zs.attempts or 0) + 1
+        PPT_ZoneStats[zone] = zs
         DebugPrint("Pick: attempt recorded for %s", tostring(dstGUID))
       else
         DebugPrint("Pick: duplicate attempt ignored")
@@ -156,6 +161,10 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     table.sort(lines, function(a,b) return a:lower() < b:lower() end)
     for _,ln in ipairs(lines) do PPTPrint(" ", ln) end
     return
+  elseif msg == "zone" then
+    PrintCurrentZoneStats(); return
+  elseif msg == "allzones" or msg == "zones" or msg == "heat" or msg == "heatmap" then
+    PrintZoneStats(); return
   elseif msg == "options" then
     -- Open options panel (Classic Era compatible)
     local panel = _G.RoguePickPocketTrackerOptions
@@ -194,6 +203,6 @@ SlashCmdList["PICKPOCKET"] = function(msg)
 
   PPTPrint("----- Totals -----");  PrintTotal()
   PPTPrint("----- Stats -----");   PrintStats()
-  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, reset, debug, items, options]")
+  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, reset, debug, items, zone, allzones, options]")
 end
 

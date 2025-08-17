@@ -8,6 +8,7 @@ A World of Warcraft Classic addon that tracks pickpocketing statistics and loot 
 - Counts successful and failed pickpocket attempts
 - Records items obtained through pickpocketing
 - Provides detailed statistics and averages
+- Tracks success rates and profits per zone with a heat map of top locations
 - Options panel for configuration
 - Slash commands for quick access
 
@@ -19,6 +20,8 @@ A World of Warcraft Classic addon that tracks pickpocketing statistics and loot 
 - `/pp reset` - Reset all statistics
 - `/pp debug` - Toggle debug mode
 - `/pp items` - Show cumulative item counts
+- `/pp zone` - Show stats for the current zone
+- `/pp allZones` - Show zone heat map and profitability stats
 
 ## Installation
 
@@ -99,6 +102,7 @@ A World of Warcraft addon that tracks pickpocketing statistics for Rogue charact
 - **Success Rate Statistics**: Monitors total attempts, successful attempts, and failure rates
 - **Item Tracking**: Records all items looted during pickpocketing sessions
 - **Session Reports**: Provides detailed reports after each stealth session
+- **Zone Analytics**: Calculates success percentages and earnings per zone with a heat map of profitable spots
 - **Persistent Data**: All statistics are saved between game sessions
 
 ## Installation
@@ -126,6 +130,8 @@ Use `/pp` to access the following commands:
 - `/pp reset` - Reset all statistics to zero
 - `/pp debug` - Toggle debug mode for troubleshooting
 - `/pp items` - Display all items collected from pickpocketing
+- `/pp zone` - Display stats for the current zone
+- `/pp allZones` - Show zone heat map and profitability stats
 
 ### Statistics Displayed
 

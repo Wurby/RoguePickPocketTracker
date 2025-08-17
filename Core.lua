@@ -11,6 +11,7 @@ PPT_TotalAttempts        = tonumber(PPT_TotalAttempts) or 0
 PPT_SuccessfulAttempts   = tonumber(PPT_SuccessfulAttempts) or 0
 PPT_TotalItems           = tonumber(PPT_TotalItems) or 0
 PPT_ItemCounts           = type(PPT_ItemCounts) == "table" and PPT_ItemCounts or {}
+PPT_ZoneStats            = type(PPT_ZoneStats) == "table" and PPT_ZoneStats or {}
 
 ------------------------------------------------------------
 --                     CONSTANTS / UTILS
@@ -61,5 +62,14 @@ function coinsToString(c)
   if s>0 then table.insert(parts, s.."s") end
   if k>0 or #parts==0 then table.insert(parts, k.."c") end
   return table.concat(parts, " ")
+end
+
+function getCurrentZone()
+  local zone = GetRealZoneText() or GetZoneText() or "Unknown Zone"
+  local sub = GetSubZoneText()
+  if sub and sub ~= "" and sub ~= zone then
+    zone = zone .. " - " .. sub
+  end
+  return zone
 end
 
