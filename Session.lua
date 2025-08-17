@@ -91,11 +91,42 @@ local function buildSummaryMessage()
   return msg
 end
 
-function ShareSessionSummary(force, msg)
+local function getLastChatTarget()
+  local box = ChatEdit_GetLastActiveWindow and ChatEdit_GetLastActiveWindow()
+  if box and box:GetAttribute("chatType") then
+    local chatType = box:GetAttribute("chatType")
+    if chatType == "WHISPER" then
+      return chatType, box:GetAttribute("tellTarget")
+    elseif chatType == "CHANNEL" then
+      return chatType, box:GetAttribute("channelTarget")
+    else
+      return chatType
+    end
+  end
+  return getGroupChannel()
+end
+
+local function buildShareMessages(summary)
+  local msgs = {}
+  table.insert(msgs, string.format("PP Totals: %s | Items %d", coinsToString(PPT_TotalCopper), PPT_TotalItems))
+  local avgAttempt = (PPT_TotalAttempts > 0) and math.floor(PPT_TotalCopper / PPT_TotalAttempts) or 0
+  local avgSuccess = (PPT_SuccessfulAttempts > 0) and math.floor(PPT_TotalCopper / PPT_SuccessfulAttempts) or 0
+  table.insert(msgs, string.format("Attempts %d, Success %d, Fail %d, Avg/Att %s, Avg/Succ %s",
+    PPT_TotalAttempts, PPT_SuccessfulAttempts, (PPT_TotalAttempts - PPT_SuccessfulAttempts),
+    coinsToString(avgAttempt), coinsToString(avgSuccess)))
+  if summary then
+    table.insert(msgs, "Last Session: " .. summary)
+  end
+  return msgs
+end
+
+function ShareSummaryAndStats(force, summary)
   if not force and not PPT_ShareGroup then return end
-  local ch = getGroupChannel()
+  local ch, target = getLastChatTarget()
   if not ch then return end
-  SendChatMessage(msg or buildSummaryMessage(), ch)
+  for _,m in ipairs(buildShareMessages(summary or PPT_LastSummary)) do
+    SendChatMessage(m, ch, nil, target)
+  end
 end
 
 ------------------------------------------------------------
@@ -133,7 +164,7 @@ function finalizeSession(reasonIfZero)
       DebugPrint("Finalize: +%s, items %d", coinsToString(sessionCopper), sessionItemsCount)
       local summaryMsg = buildSummaryMessage()
       PrintSessionSummary()
-      ShareSessionSummary(nil, summaryMsg)
+      ShareSummaryAndStats(nil, summaryMsg)
       PPT_LastSummary = summaryMsg
     else
       DebugPrint("Finalize: no loot (%s)", reasonIfZero or "no change")

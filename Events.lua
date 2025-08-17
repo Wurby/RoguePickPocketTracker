@@ -143,11 +143,7 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPT_ShowMsg = not PPT_ShowMsg
     PPTPrint("showMsg =", tostring(PPT_ShowMsg)); return
   elseif cmd == "share" then
-    if PPT_LastSummary then
-      ShareSessionSummary(true, PPT_LastSummary)
-    else
-      PPTPrint("No session summary to share yet")
-    end
+    ShareSummaryAndStats(true, PPT_LastSummary)
     return
   elseif cmd == "auto" and arg == "share" then
     PPT_ShareGroup = not PPT_ShareGroup

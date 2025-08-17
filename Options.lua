@@ -20,7 +20,7 @@ panel.showMsg:SetScript("OnClick", function(self) PPT_ShowMsg = self:GetChecked(
 
 panel.shareGroup = CreateFrame("CheckButton", "PPT_ShareGroupCheck", panel, "InterfaceOptionsCheckButtonTemplate")
 panel.shareGroup:SetPoint("TOPLEFT", panel.showMsg, "BOTTOMLEFT", 0, -8)
-panel.shareGroup.Text:SetText("Share data with group")
+panel.shareGroup.Text:SetText("Auto share stats")
 panel.shareGroup:SetScript("OnClick", function(self) PPT_ShareGroup = self:GetChecked() end)
 
 -- Reset statistics button
