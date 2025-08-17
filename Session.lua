@@ -13,6 +13,7 @@ sessionCopper = 0
 mirroredCopperThisSession = 0
 sessionHadPick = false
 attemptedGUIDs = {}      -- one attempt per target per session
+sessionTargetCount = 0
 sessionItemsCount = 0
 sessionItems = {}
 
@@ -79,6 +80,7 @@ function resetSession()
   sessionCopper = 0
   mirroredCopperThisSession = 0
   sessionHadPick = false
+  sessionTargetCount = 0
   sessionItemsCount = 0
   sessionItems = {}
   attemptedGUIDs = {}
@@ -106,6 +108,37 @@ function finalizeSession(reasonIfZero)
       PPT_SuccessfulAttempts = PPT_SuccessfulAttempts + 1
       DebugPrint("Finalize: +%s, items %d", coinsToString(sessionCopper), sessionItemsCount)
       PrintSessionSummary()
+      if Achievements then
+        if Achievements.EARN_25G_SESSION and sessionCopper >= Achievements.EARN_25G_SESSION.goal then
+          UpdateAchievement("EARN_25G_SESSION", sessionCopper)
+        end
+        if Achievements.EARN_100G_SESSION and sessionCopper >= Achievements.EARN_100G_SESSION.goal then
+          UpdateAchievement("EARN_100G_SESSION", sessionCopper)
+        end
+        local itemAch = {
+          "LOOT_1_ITEM_SESSION",
+          "LOOT_2_ITEMS_SESSION",
+          "LOOT_5_ITEMS_SESSION",
+          "LOOT_10_ITEMS_SESSION",
+        }
+        for _, id in ipairs(itemAch) do
+          if Achievements[id] and sessionItemsCount >= Achievements[id].goal then
+            UpdateAchievement(id, sessionItemsCount)
+          end
+        end
+        local targetAch = {
+          "SESSION_TARGETS_1",
+          "SESSION_TARGETS_3",
+          "SESSION_TARGETS_5",
+          "SESSION_TARGETS_10",
+          "SESSION_TARGETS_15",
+        }
+        for _, id in ipairs(targetAch) do
+          if Achievements[id] and sessionTargetCount >= Achievements[id].goal then
+            UpdateAchievement(id, sessionTargetCount)
+          end
+        end
+      end
     else
       DebugPrint("Finalize: no loot (%s)", reasonIfZero or "no change")
       PrintNoCoin(reasonIfZero or "no change")

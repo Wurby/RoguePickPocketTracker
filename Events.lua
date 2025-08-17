@@ -64,7 +64,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
     end
 
   elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-    local _, sub, _, srcGUID, _, _, _, dstGUID, _, _, _, spellID = CombatLogGetCurrentEventInfo()
+    local _, sub, _, srcGUID, _, _, _, dstGUID, dstName, _, _, spellID = CombatLogGetCurrentEventInfo()
     if not playerGUID then return end
 
     if dstGUID == playerGUID and STEALTH_IDS[spellID] then
@@ -80,7 +80,13 @@ frame:SetScript("OnEvent", function(_, event, ...)
       sessionHadPick = true
       if dstGUID and not attemptedGUIDs[dstGUID] then
         attemptedGUIDs[dstGUID] = true
+        sessionTargetCount = sessionTargetCount + 1
         PPT_TotalAttempts = PPT_TotalAttempts + 1
+        if UpdateAchievement then
+          UpdateAchievement("PICKPOCKET_100", 1)
+          UpdateAchievement("PICKPOCKET_1K", 1)
+          UpdateAchievement("PICKPOCKET_5K", 1)
+        end
         DebugPrint("Pick: attempt recorded for %s", tostring(dstGUID))
       else
         DebugPrint("Pick: duplicate attempt ignored")
@@ -156,6 +162,36 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     table.sort(lines, function(a,b) return a:lower() < b:lower() end)
     for _,ln in ipairs(lines) do PPTPrint(" ", ln) end
     return
+  elseif msg == "achievements" then
+    local panel = _G.RoguePickPocketTrackerOptions
+    if panel then
+      if InterfaceOptionsFrame_OpenToCategory then
+        InterfaceOptionsFrame_OpenToCategory(panel)
+      elseif InterfaceOptionsFrame_OpenToPanel then
+        InterfaceOptionsFrame_OpenToPanel(panel)
+      elseif Settings and Settings.OpenToCategory then
+        if _G.PPT_SettingsCategory then
+          Settings.OpenToCategory(_G.PPT_SettingsCategory)
+        elseif panel.settingsCategory then
+          Settings.OpenToCategory(panel.settingsCategory)
+        else
+          SettingsPanel:Open()
+        end
+      else
+        if InterfaceOptionsFrame then
+          InterfaceOptionsFrame:Show()
+          panel:SetParent(InterfaceOptionsFramePanelContainer)
+          panel:Show()
+        elseif SettingsPanel then
+          SettingsPanel:Open()
+          panel:Show()
+        end
+      end
+      PPTPrint("Opening achievements panel...")
+    else
+      PPTPrint("Error: Options panel not found!")
+    end
+    return
   elseif msg == "options" then
     -- Open options panel (Classic Era compatible)
     local panel = _G.RoguePickPocketTrackerOptions
@@ -194,6 +230,6 @@ SlashCmdList["PICKPOCKET"] = function(msg)
 
   PPTPrint("----- Totals -----");  PrintTotal()
   PPTPrint("----- Stats -----");   PrintStats()
-  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, reset, debug, items, options]")
+  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, reset, debug, items, achievements, options]")
 end
 

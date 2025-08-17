@@ -54,6 +54,15 @@ panel.statAvgAttempt:SetPoint("TOPLEFT", panel.statFails, "BOTTOMLEFT", 0, -10)
 panel.statAvgSuccess = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
 panel.statAvgSuccess:SetPoint("TOPLEFT", panel.statAvgAttempt, "BOTTOMLEFT", 0, -4)
 
+panel.achHeader = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+panel.achHeader:SetPoint("TOPLEFT", panel.statAvgSuccess, "BOTTOMLEFT", 0, -20)
+panel.achHeader:SetText("Achievements:")
+
+panel.achText = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+panel.achText:SetPoint("TOPLEFT", panel.achHeader, "BOTTOMLEFT", 0, -4)
+panel.achText:SetJustifyH("LEFT")
+panel.achText:SetWidth(300)
+
 -- Refresh stats display
 function panel:updateStats()
   self.showMsg:SetChecked(PPT_ShowMsg)
@@ -68,7 +77,19 @@ function panel:updateStats()
   self.statAvgSuccess:SetText("Avg/Success: "..coinsToString(avgSuccess))
 end
 
-panel:SetScript("OnShow", function(self) self:updateStats() end)
+function panel:updateAchievements()
+  local lines = {}
+  for _,ach in pairs(Achievements) do
+    table.insert(lines, string.format("%s - %s", ach.name, GetAchievementProgressText(ach)))
+  end
+  table.sort(lines)
+  self.achText:SetText(table.concat(lines, "\n"))
+end
+
+panel:SetScript("OnShow", function(self)
+  self:updateStats()
+  if self.updateAchievements then self:updateAchievements() end
+end)
 
 -- Make panel globally accessible
 _G.RoguePickPocketTrackerOptions = panel
