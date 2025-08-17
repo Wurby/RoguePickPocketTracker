@@ -138,25 +138,35 @@ end)
 SLASH_PICKPOCKET1 = "/pp"
 SlashCmdList["PICKPOCKET"] = function(msg)
   msg = (msg or ""):lower()
-  if msg == "togglemsg" then
+  local cmd, arg = msg:match("^(%S+)%s*(.*)$")
+  if cmd == "togglemsg" then
     PPT_ShowMsg = not PPT_ShowMsg
     PPTPrint("showMsg =", tostring(PPT_ShowMsg)); return
-  elseif msg == "reset" then
+  elseif cmd == "share" then
+    if PPT_LastSummary then
+      ShareSessionSummary(true, PPT_LastSummary)
+    else
+      PPTPrint("No session summary to share yet")
+    end
+    return
+  elseif cmd == "auto" and arg == "share" then
+    PPT_ShareGroup = not PPT_ShareGroup
+    PPTPrint("auto share =", tostring(PPT_ShareGroup))
+    return
+  elseif cmd == "reset" then
     ResetAllStats()
     PPTPrint("Stats reset."); return
-  elseif msg == "debug" then
+  elseif cmd == "debug" then
     PPT_Debug = not PPT_Debug
     PPTPrint("debug =", tostring(PPT_Debug)); return
-  elseif msg == "items" then
+  elseif cmd == "items" then
     PPTPrint("Cumulative items:", PPT_TotalItems)
-    local list = {}
-    for name, cnt in pairs(PPT_ItemCounts) do table.insert(lines, string.format("%s x%d", name, cnt)) end
     local lines = {}
     for name, cnt in pairs(PPT_ItemCounts) do table.insert(lines, string.format("%s x%d", name, cnt)) end
     table.sort(lines, function(a,b) return a:lower() < b:lower() end)
     for _,ln in ipairs(lines) do PPTPrint(" ", ln) end
     return
-  elseif msg == "options" then
+  elseif cmd == "options" then
     -- Open options panel (Classic Era compatible)
     local panel = _G.RoguePickPocketTrackerOptions
     if panel then
@@ -194,6 +204,6 @@ SlashCmdList["PICKPOCKET"] = function(msg)
 
   PPTPrint("----- Totals -----");  PrintTotal()
   PPTPrint("----- Stats -----");   PrintStats()
-  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, reset, debug, items, options]")
+  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, share, auto share, reset, debug, items, options]")
 end
 

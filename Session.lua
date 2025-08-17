@@ -15,6 +15,7 @@ sessionHadPick = false
 attemptedGUIDs = {}      -- one attempt per target per session
 sessionItemsCount = 0
 sessionItems = {}
+PPT_LastSummary = nil
 
 -- UI-guard helpers
 recentUI = {}
@@ -72,6 +73,31 @@ function PrintSessionSummary()
   PPTPrint(" ")
 end
 
+local function getGroupChannel()
+  if IsInRaid and IsInRaid() then return "RAID" end
+  if IsInGroup and IsInGroup() then return "PARTY" end
+  if GetNumRaidMembers and GetNumRaidMembers() > 0 then return "RAID" end
+  if GetNumPartyMembers and GetNumPartyMembers() > 0 then return "PARTY" end
+end
+
+local function buildSummaryMessage()
+  local msg = string.format("Pick Pocket: +%s", coinsToString(sessionCopper))
+  if sessionItemsCount > 0 then
+    local items = {}
+    for name, cnt in pairs(sessionItems) do table.insert(items, string.format("%s x%d", name, cnt)) end
+    table.sort(items)
+    msg = msg .. " | " .. table.concat(items, ", ")
+  end
+  return msg
+end
+
+function ShareSessionSummary(force, msg)
+  if not force and not PPT_ShareGroup then return end
+  local ch = getGroupChannel()
+  if not ch then return end
+  SendChatMessage(msg or buildSummaryMessage(), ch)
+end
+
 ------------------------------------------------------------
 --                     SESSION LIFECYCLE
 ------------------------------------------------------------
@@ -105,13 +131,18 @@ function finalizeSession(reasonIfZero)
       end
       PPT_SuccessfulAttempts = PPT_SuccessfulAttempts + 1
       DebugPrint("Finalize: +%s, items %d", coinsToString(sessionCopper), sessionItemsCount)
+      local summaryMsg = buildSummaryMessage()
       PrintSessionSummary()
+      ShareSessionSummary(nil, summaryMsg)
+      PPT_LastSummary = summaryMsg
     else
       DebugPrint("Finalize: no loot (%s)", reasonIfZero or "no change")
       PrintNoCoin(reasonIfZero or "no change")
+      PPT_LastSummary = nil
     end
   else
     DebugPrint("Finalize: no Pick Pocket in session (ignored)")
+    PPT_LastSummary = nil
   end
 
   sessionActive = false
