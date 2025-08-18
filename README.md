@@ -10,12 +10,15 @@ A World of Warcraft Classic addon that tracks pickpocketing statistics and loot 
 - Provides detailed statistics and averages
 - Options panel for configuration
 - Slash commands for quick access
+- Optionally shares total stats and your last session summary to your last chat channel, manually or automatically
 
 ## Slash Commands
 
 - `/pp` - Show statistics and help
 - `/pp options` - Open the options panel
 - `/pp togglemsg` - Toggle loot messages
+- `/pp share` - Share totals and the most recent session summary
+- `/pp auto share` - Toggle automatic sharing
 - `/pp reset` - Reset all statistics
 - `/pp debug` - Toggle debug mode
 - `/pp items` - Show cumulative item counts
@@ -100,6 +103,7 @@ A World of Warcraft addon that tracks pickpocketing statistics for Rogue charact
 - **Item Tracking**: Records all items looted during pickpocketing sessions
 - **Session Reports**: Provides detailed reports after each stealth session
 - **Persistent Data**: All statistics are saved between game sessions
+- **Group Sharing**: Optionally broadcast your totals and last session summary to your last chat channel
 
 ## Installation
 
@@ -123,6 +127,8 @@ Use `/pp` to access the following commands:
 
 - `/pp` - Display current statistics and totals
 - `/pp togglemsg` - Toggle pickup messages on/off
+- `/pp share` - Share totals and the most recent session summary
+- `/pp auto share` - Toggle automatic sharing
 - `/pp reset` - Reset all statistics to zero
 - `/pp debug` - Toggle debug mode for troubleshooting
 - `/pp items` - Display all items collected from pickpocketing

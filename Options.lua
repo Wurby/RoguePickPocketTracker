@@ -18,10 +18,15 @@ panel.showMsg:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
 panel.showMsg.Text:SetText("Show loot messages")
 panel.showMsg:SetScript("OnClick", function(self) PPT_ShowMsg = self:GetChecked() end)
 
+panel.shareGroup = CreateFrame("CheckButton", "PPT_ShareGroupCheck", panel, "InterfaceOptionsCheckButtonTemplate")
+panel.shareGroup:SetPoint("TOPLEFT", panel.showMsg, "BOTTOMLEFT", 0, -8)
+panel.shareGroup.Text:SetText("Auto share stats")
+panel.shareGroup:SetScript("OnClick", function(self) PPT_ShareGroup = self:GetChecked() end)
+
 -- Reset statistics button
 panel.resetBtn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 panel.resetBtn:SetSize(140, 22)
-panel.resetBtn:SetPoint("TOPLEFT", panel.showMsg, "BOTTOMLEFT", 0, -10)
+panel.resetBtn:SetPoint("TOPLEFT", panel.shareGroup, "BOTTOMLEFT", 0, -10)
 panel.resetBtn:SetText("Reset Statistics")
 panel.resetBtn:SetScript("OnClick", function()
   ResetAllStats()
@@ -57,6 +62,7 @@ panel.statAvgSuccess:SetPoint("TOPLEFT", panel.statAvgAttempt, "BOTTOMLEFT", 0, 
 -- Refresh stats display
 function panel:updateStats()
   self.showMsg:SetChecked(PPT_ShowMsg)
+  self.shareGroup:SetChecked(PPT_ShareGroup)
   self.statCoin:SetText("Total Coinage: "..coinsToString(PPT_TotalCopper))
   self.statItems:SetText("Total Items: "..PPT_TotalItems)
   self.statAttempts:SetText("Attempts: "..PPT_TotalAttempts)
