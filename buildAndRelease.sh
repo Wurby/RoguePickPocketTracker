@@ -81,6 +81,73 @@ done
 
 echo ""
 echo "🏷️  New version will be: $NEW_VERSION"
+
+# Check if this is a major version change (breaking changes)
+IS_MAJOR_BUMP=false
+if [[ $VERSION_TYPE == "3" ]] || ([[ $VERSION_TYPE == "4" ]] && [[ ${NEW_VERSION%%.*} -gt $MAJOR ]]); then
+    IS_MAJOR_BUMP=true
+fi
+
+# Handle data version bump for breaking changes
+if [[ $IS_MAJOR_BUMP == true ]]; then
+    echo ""
+    echo "🔄 Major version detected - checking data version..."
+    
+    # Get current data version from Core.lua
+    CORE_FILE="Core.lua"
+    if [[ ! -f "$CORE_FILE" ]]; then
+        echo "❌ Error: Core.lua not found in current directory"
+        exit 1
+    fi
+    
+    CURRENT_DATA_VERSION=$(grep -o 'CURRENT_DATA_VERSION = [0-9]\+' "$CORE_FILE" | grep -o '[0-9]\+')
+    if [[ -z "$CURRENT_DATA_VERSION" ]]; then
+        echo "❌ Error: Could not find CURRENT_DATA_VERSION in Core.lua"
+        exit 1
+    fi
+    
+    NEW_DATA_VERSION=$((CURRENT_DATA_VERSION + 1))
+    
+    echo "📊 Current data version: $CURRENT_DATA_VERSION"
+    echo "📈 New data version: $NEW_DATA_VERSION"
+    echo ""
+    echo "⚠️  This will cause a data reset for users upgrading from older versions!"
+    echo "   Users will see a migration notice and their stats will be reset."
+    echo ""
+    
+    read -p "🔄 Bump data version to $NEW_DATA_VERSION? (y/N): " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        # Update the data version in Core.lua
+        echo "📝 Updating CURRENT_DATA_VERSION in Core.lua..."
+        
+        # Use sed to replace the data version line
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS version
+            sed -i '' "s/local CURRENT_DATA_VERSION = [0-9]\+/local CURRENT_DATA_VERSION = $NEW_DATA_VERSION/" "$CORE_FILE"
+        else
+            # Linux version
+            sed -i "s/local CURRENT_DATA_VERSION = [0-9]\+/local CURRENT_DATA_VERSION = $NEW_DATA_VERSION/" "$CORE_FILE"
+        fi
+        
+        # Verify the change
+        NEW_VERSION_CHECK=$(grep -o 'CURRENT_DATA_VERSION = [0-9]\+' "$CORE_FILE" | grep -o '[0-9]\+')
+        if [[ "$NEW_VERSION_CHECK" == "$NEW_DATA_VERSION" ]]; then
+            echo "✅ Data version updated successfully: $CURRENT_DATA_VERSION → $NEW_DATA_VERSION"
+            
+            # Stage the change for git
+            git add "$CORE_FILE"
+            echo "📦 Staged Core.lua for commit"
+        else
+            echo "❌ Error: Failed to update data version in Core.lua"
+            exit 1
+        fi
+    else
+        echo "⏭️  Skipping data version bump"
+    fi
+fi
+
 echo ""
 
 # Ask for release type
@@ -119,6 +186,9 @@ echo "📝 Summary:"
 echo "   Previous tag: $LATEST_TAG"
 echo "   New tag: $FULL_TAG"
 echo "   Release type: $([ "$RELEASE_SUFFIX" = "" ] && echo "Release" || echo "${RELEASE_SUFFIX#-}")"
+if [[ $IS_MAJOR_BUMP == true ]] && [[ $REPLY =~ ^[Yy]$ ]] && [[ -n "$NEW_DATA_VERSION" ]]; then
+    echo "   Data version: $CURRENT_DATA_VERSION → $NEW_DATA_VERSION (⚠️  breaking change)"
+fi
 echo ""
 
 # Final confirmation
@@ -128,6 +198,19 @@ echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "❌ Aborted."
     exit 1
+fi
+
+# Commit data version change if it was made
+if [[ $IS_MAJOR_BUMP == true ]] && [[ -n "$NEW_DATA_VERSION" ]]; then
+    # Check if Core.lua was actually staged (meaning data version was updated)
+    if git diff --staged --name-only | grep -q "Core.lua"; then
+        echo "💾 Committing data version bump..."
+        git commit -m "Bump data version to $NEW_DATA_VERSION for v$NEW_VERSION
+
+This is a breaking change that will reset user data to ensure
+compatibility with new features and data structures."
+        echo "✅ Data version change committed"
+    fi
 fi
 
 # Create the tag
@@ -151,4 +234,14 @@ echo "   • Upload to CurseForge (if configured)"
 echo ""
 echo "🌐 Check your releases at: https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/releases"
 echo ""
+
+# Additional info for major releases with data version bumps
+if [[ $IS_MAJOR_BUMP == true ]] && [[ -n "$NEW_DATA_VERSION" ]]; then
+    echo "⚠️  Important: This major release includes a data version bump!"
+    echo "   • User data will be reset when they upgrade"
+    echo "   • A migration notice will be shown to users"
+    echo "   • Make sure release notes mention breaking changes"
+    echo ""
+fi
+
 echo "🎉 Release process initiated!"
