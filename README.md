@@ -45,59 +45,9 @@ This addon uses GitHub Actions for automatic packaging and release:
 - Creates a packaged zip file
 - Uploads to GitHub releases
 
-#### CurseForge Integration (Optional)
-To enable automatic CurseForge uploads:
-
-1. **Get your CurseForge API Token:**
-   - Go to [CurseForge API Tokens](https://www.curseforge.com/account/api-tokens)
-   - Create a new token named "GitHub Actions"
-
-2. **Get your Project ID:**
-   - Go to your CurseForge project page
-   - Find the Project ID in the "About This Project" section
-
-3. **Set up GitHub Secrets:**
-   - Go to your GitHub repository → Settings → Secrets and variables → Actions
-   - Add these secrets:
-     - `CURSEFORGE_TOKEN`: Your CurseForge API token
-     - `CURSEFORGE_PROJECT_ID`: Your CurseForge project ID
-
-4. **Set up CurseForge Webhook (Alternative):**
-   - Go to your GitHub repository → Settings → Webhooks
-   - Add webhook with URL: `https://www.curseforge.com/api/projects/{projectID}/package?token={token}`
-   - Replace `{projectID}` and `{token}` with your values
-   - Set Content Type to `application/json`
-   - Select "Just the push event"
-
 ### Release Process
 
-1. **For Alpha/Beta releases:**
-   ```bash
-   git tag v1.0.0-alpha1
-   git push origin v1.0.0-alpha1
-   ```
-
-2. **For stable releases:**
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-
-The automation will:
-- Package the addon files
-- Replace version tokens (like `@project-version@`)
-- Create appropriate release type based on tag name
-- Upload to GitHub releases
-- Upload to CurseForge (if configured)
-
-## File Structure
-
-- `Core.lua` - Global state, constants, and utility functions
-- `Session.lua` - Session management and statistics tracking
-- `Events.lua` - Event handling and slash commands
-- `Options.lua` - Interface options panel
-- `RoguePickPocketTracker.toc` - Addon metadata
-- `.pkgmeta` - Packaging configuration for automated releases
+run ./buildAndRelease.sh
 
 A World of Warcraft addon that tracks pickpocketing statistics for Rogue characters, including total money looted, success rates, and items obtained.
 
