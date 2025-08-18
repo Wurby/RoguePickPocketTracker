@@ -14,6 +14,64 @@ PPT_TotalItems           = tonumber(PPT_TotalItems) or 0
 PPT_ItemCounts           = type(PPT_ItemCounts) == "table" and PPT_ItemCounts or {}
 PPT_ZoneStats            = type(PPT_ZoneStats) == "table" and PPT_ZoneStats or {}
 PPT_LocationStats        = type(PPT_LocationStats) == "table" and PPT_LocationStats or {}
+PPT_DataVersion          = PPT_DataVersion or 0
+
+------------------------------------------------------------
+--                    DATA MIGRATION
+------------------------------------------------------------
+local CURRENT_DATA_VERSION = 1  -- Increment this when introducing breaking changes
+
+function shouldResetData(savedVersion)
+  -- Add version numbers here that require full data reset
+  local breakingVersions = {
+    1, -- Location-based analytics introduction
+    -- 2, -- Future breaking change
+    -- 3, -- Another future breaking change
+  }
+  
+  for _, breakingVersion in ipairs(breakingVersions) do
+    if savedVersion < breakingVersion then
+      return true, breakingVersion
+    end
+  end
+  return false, nil
+end
+
+function migrateData()
+  local savedVersion = PPT_DataVersion or 0
+  
+  if savedVersion == CURRENT_DATA_VERSION then
+    DebugPrint("Data version %d current, no migration needed", savedVersion)
+    return
+  end
+  
+  local needsReset, breakingVersion = shouldResetData(savedVersion)
+  
+  if needsReset then
+    -- Reset all data
+    PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems = 0,0,0,0
+    PPT_ItemCounts = {}
+    PPT_ZoneStats = {}
+    PPT_LocationStats = {}
+    
+    -- Notify user
+    PPTPrint("=== DATA RESET NOTICE ===")
+    PPTPrint("Your pickpocketing statistics have been reset due to addon improvements.")
+    PPTPrint("New features added: Location-based analytics and enhanced zone tracking!")
+    PPTPrint("This was necessary to ensure data accuracy with the new zone tracking system.")
+    PPTPrint("Your progress will now be tracked more accurately.")
+    PPTPrint("=========================")
+    
+    DebugPrint("Data reset performed: v%d -> v%d (breaking change in v%d)", 
+               savedVersion, CURRENT_DATA_VERSION, breakingVersion)
+  else
+    -- Future: Add non-breaking migrations here
+    DebugPrint("Data migrated: v%d -> v%d (no reset needed)", savedVersion, CURRENT_DATA_VERSION)
+  end
+  
+  -- Update version
+  PPT_DataVersion = CURRENT_DATA_VERSION
+end
 
 ------------------------------------------------------------
 --                     CONSTANTS / UTILS

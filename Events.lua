@@ -43,8 +43,14 @@ end)
 
 frame:SetScript("OnEvent", function(_, event, ...)
   if event == "ADDON_LOADED" then
-    DebugPrint(("SV @load: copper=%d attempts=%d succ=%d items=%d")
-      :format(PPT_TotalCopper or -1, PPT_TotalAttempts or -1, PPT_SuccessfulAttempts or -1, PPT_TotalItems or -1))
+    local addonName = ...
+    if addonName == "RoguePickPocketTracker" then
+      -- Perform data migration first
+      migrateData()
+      
+      DebugPrint(("SV @load: copper=%d attempts=%d succ=%d items=%d version=%d")
+        :format(PPT_TotalCopper or -1, PPT_TotalAttempts or -1, PPT_SuccessfulAttempts or -1, PPT_TotalItems or -1, PPT_DataVersion or -1))
+    end
 
   elseif event == "PLAYER_ENTERING_WORLD" then
     playerGUID = UnitGUID("player")
@@ -81,7 +87,16 @@ frame:SetScript("OnEvent", function(_, event, ...)
       if dstGUID and not attemptedGUIDs[dstGUID] then
         attemptedGUIDs[dstGUID] = true
         PPT_TotalAttempts = PPT_TotalAttempts + 1
-        DebugPrint("Pick: attempt recorded for %s", tostring(dstGUID))
+        
+        -- Record location-based attempt immediately using CURRENT location (not session location)
+        local currentZone = getCurrentZone()
+        local currentLocation = getCurrentLocation()
+        recordPickPocketAttempt(currentZone, currentLocation, false, 0, 0) -- Record as failed initially
+        
+        -- Store this attempt's location for potential success update later
+        attemptedGUIDs[dstGUID] = {zone = currentZone, location = currentLocation}
+        
+        DebugPrint("Pick: attempt recorded for %s at %s", tostring(dstGUID), currentLocation)
       else
         DebugPrint("Pick: duplicate attempt ignored")
       end
@@ -166,9 +181,10 @@ SlashCmdList["PICKPOCKET"] = function(msg)
         for i = 1, math.min(5, #locations) do
           local locationData = locations[i]
           local stats = locationData.stats
-          local locSuccessRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
-          PPTPrint(string.format("%s: %s (%d/%d, %d%%)",
-            locationData.location, coinsToString(stats.copper), stats.successes, stats.attempts, locSuccessRate))
+          local failures = stats.attempts - stats.successes
+          local copperPerAttempt = stats.attempts > 0 and math.floor(stats.copper / stats.attempts) or 0
+          PPTPrint(string.format("%s: %s (%d attempts, %d failures, %s/attempt, %d items)",
+            locationData.location, coinsToString(stats.copper), stats.attempts, failures, coinsToString(copperPerAttempt), stats.items))
         end
       end
       return
@@ -201,8 +217,9 @@ SlashCmdList["PICKPOCKET"] = function(msg)
       for _, zoneData in ipairs(zones) do
         local stats = zoneData.stats
         local successRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
-        PPTPrint(string.format("%s: %s (%d/%d, %d%%, %d items)",
-          zoneData.zone, coinsToString(stats.copper), stats.successes, stats.attempts, successRate, stats.items))
+        local copperPerAttempt = stats.attempts > 0 and math.floor(stats.copper / stats.attempts) or 0
+        PPTPrint(string.format("%s: %s (%d attempts, %d%% success, %s/attempt, %d items)",
+          zoneData.zone, coinsToString(stats.copper), stats.attempts, successRate, coinsToString(copperPerAttempt), stats.items))
       end
       return
     elseif arg2 == "all" then
@@ -229,8 +246,9 @@ SlashCmdList["PICKPOCKET"] = function(msg)
       for _, locationData in ipairs(locations) do
         local stats = locationData.stats
         local successRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
-        PPTPrint(string.format("%s: %s (%d/%d, %d%%, %d items)",
-          locationData.location, coinsToString(stats.copper), stats.successes, stats.attempts, successRate, stats.items))
+        local copperPerAttempt = stats.attempts > 0 and math.floor(stats.copper / stats.attempts) or 0
+        PPTPrint(string.format("%s: %s (%d attempts, %d%% success, %s/attempt, %d items)",
+          locationData.location, coinsToString(stats.copper), stats.attempts, successRate, coinsToString(copperPerAttempt), stats.items))
       end
       return
     elseif arg1 ~= "" then
@@ -264,9 +282,10 @@ SlashCmdList["PICKPOCKET"] = function(msg)
         for i = 1, math.min(5, #locations) do
           local locationData = locations[i]
           local stats = locationData.stats
-          local locSuccessRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
-          PPTPrint(string.format("%s: %s (%d/%d, %d%%)",
-            locationData.location, coinsToString(stats.copper), stats.successes, stats.attempts, locSuccessRate))
+          local failures = stats.attempts - stats.successes
+          local copperPerAttempt = stats.attempts > 0 and math.floor(stats.copper / stats.attempts) or 0
+          PPTPrint(string.format("%s: %s (%d attempts, %d failures, %s/attempt, %d items)",
+            locationData.location, coinsToString(stats.copper), stats.attempts, failures, coinsToString(copperPerAttempt), stats.items))
         end
       end
       return
@@ -289,6 +308,10 @@ SlashCmdList["PICKPOCKET"] = function(msg)
   elseif cmd == "debug" then
     PPT_Debug = not PPT_Debug
     PPTPrint("debug =", tostring(PPT_Debug)); return
+  elseif cmd == "version" then
+    PPTPrint("Data version:", PPT_DataVersion or 0)
+    PPTPrint("Current version:", 1)  -- Update this when CURRENT_DATA_VERSION changes
+    return
   elseif cmd == "items" then
     PPTPrint("Cumulative items:", PPT_TotalItems)
     local lines = {}
@@ -330,17 +353,45 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     end
     PPTPrint("Opening options panel...")
     return
+  elseif cmd == "help" then
+    PPTPrint("----- Help -----")
+    PPTPrint("Usage: /pp [togglemsg, share, auto share, reset, debug, items, options, help, version]")
+    PPTPrint("Zone commands:")
+    PPTPrint("  /pp zone - Show current zone stats")
+    PPTPrint("  /pp zone location - Show current location stats")
+    PPTPrint("  /pp zone all - Show all zone stats")
+    PPTPrint("  /pp zone [name] - Show specific zone stats")
+    PPTPrint("  /pp zone [name] all - Show all locations in zone")
+    PPTPrint("Other commands:")
+    PPTPrint("  /pp togglemsg - Toggle loot messages")
+    PPTPrint("  /pp share - Share totals and last session")
+    PPTPrint("  /pp auto share - Toggle automatic sharing")
+    PPTPrint("  /pp reset - Reset all statistics")
+    PPTPrint("  /pp debug - Toggle debug mode")
+    PPTPrint("  /pp version - Show data version info")
+    PPTPrint("  /pp items - Show cumulative item counts")
+    PPTPrint("  /pp options - Open options panel")
+    return
   end
 
   PPTPrint("----- Totals -----");  PrintTotal()
   PPTPrint("----- Stats -----");   PrintStats()
-  PPTPrint("----- Help -----")
-  PPTPrint("Usage: /pp [togglemsg, share, auto share, reset, debug, items, options]")
-  PPTPrint("Zone commands:")
-  PPTPrint("  /pp zone - Show current zone stats")
-  PPTPrint("  /pp zone location - Show current location stats")
-  PPTPrint("  /pp zone all - Show all zone stats")
-  PPTPrint("  /pp zone [name] - Show specific zone stats")
-  PPTPrint("  /pp zone [name] all - Show all locations in zone")
+  
+  -- Show top zones
+  PPTPrint("----- Top Zones -----")
+  local zones = getZoneStatsSummary()
+  if #zones == 0 then
+    PPTPrint("No zone data available yet.")
+  else
+    for i = 1, math.min(5, #zones) do
+      local zoneData = zones[i]
+      local stats = zoneData.stats
+      local successRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
+      PPTPrint(string.format("%s: %s (%d%% success)",
+        zoneData.zone, coinsToString(stats.copper), successRate))
+    end
+  end
+  
+  PPTPrint("Use /pp help for command list")
 end
 

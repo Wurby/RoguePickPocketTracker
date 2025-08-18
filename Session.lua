@@ -60,6 +60,7 @@ function ResetAllStats()
   PPT_ItemCounts = {}
   PPT_ZoneStats = {}
   PPT_LocationStats = {}
+  -- Don't reset PPT_DataVersion on manual reset - only on breaking changes
 end
 
 -- End-of-session block with headers like /pp
@@ -171,9 +172,67 @@ function finalizeSession(reasonIfZero)
       end
       PPT_SuccessfulAttempts = PPT_SuccessfulAttempts + 1
       
-      -- Record location-based statistics for successful attempt
+      -- Update location-based statistics to reflect success and add copper/items
       if sessionZone and sessionLocation then
-        recordPickPocketAttempt(sessionZone, sessionLocation, true, sessionCopper, sessionItemsCount)
+        -- Collect all locations that had attempts in this session
+        local sessionLocations = {}
+        for guid, locationData in pairs(attemptedGUIDs) do
+          if type(locationData) == "table" then
+            local locKey = locationData.location
+            if not sessionLocations[locKey] then
+              sessionLocations[locKey] = {zone = locationData.zone, count = 0}
+            end
+            sessionLocations[locKey].count = sessionLocations[locKey].count + 1
+          end
+        end
+        
+        -- If we have multiple locations, distribute items/copper proportionally
+        local totalAttempts = 0
+        for _, data in pairs(sessionLocations) do
+          totalAttempts = totalAttempts + data.count
+        end
+        
+        if totalAttempts > 0 then
+          for location, data in pairs(sessionLocations) do
+            local proportion = data.count / totalAttempts
+            local locationCopper = math.floor(sessionCopper * proportion)
+            local locationItems = math.floor(sessionItemsCount * proportion)
+            
+            local locationStats = PPT_LocationStats[location]
+            local zoneStats = PPT_ZoneStats[data.zone]
+            
+            if locationStats and zoneStats then
+              -- Add one success per attempt at this location (converting failed attempts to successes)
+              locationStats.successes = locationStats.successes + data.count
+              locationStats.copper = locationStats.copper + locationCopper
+              locationStats.items = locationStats.items + locationItems
+              
+              zoneStats.successes = zoneStats.successes + data.count
+              zoneStats.copper = zoneStats.copper + locationCopper
+              zoneStats.items = zoneStats.items + locationItems
+              
+              DebugPrint("Location tracking: Updated %s (%s) - %d successes, copper +%s, items +%s", 
+                         location, data.zone, data.count, coinsToString(locationCopper), tostring(locationItems))
+            end
+          end
+        else
+          -- Fallback to old method if no location data available
+          local locationStats = PPT_LocationStats[sessionLocation]
+          local zoneStats = PPT_ZoneStats[sessionZone]
+          
+          if locationStats and zoneStats then
+            locationStats.successes = locationStats.successes + 1
+            locationStats.copper = locationStats.copper + sessionCopper
+            locationStats.items = locationStats.items + sessionItemsCount
+            
+            zoneStats.successes = zoneStats.successes + 1
+            zoneStats.copper = zoneStats.copper + sessionCopper
+            zoneStats.items = zoneStats.items + sessionItemsCount
+            
+            DebugPrint("Location tracking: Updated %s (%s) to success - copper +%s, items +%s", 
+                       sessionLocation, sessionZone, coinsToString(sessionCopper), tostring(sessionItemsCount))
+          end
+        end
       end
       
       DebugPrint("Finalize: +%s, items %d", coinsToString(sessionCopper), sessionItemsCount)
@@ -182,11 +241,7 @@ function finalizeSession(reasonIfZero)
       ShareSummaryAndStats(nil, summaryMsg)
       PPT_LastSummary = summaryMsg
     else
-      -- Record location-based statistics for failed attempt
-      if sessionZone and sessionLocation then
-        recordPickPocketAttempt(sessionZone, sessionLocation, false, 0, 0)
-      end
-      
+      -- Failed session - attempts already recorded as failed, nothing more to do
       DebugPrint("Finalize: no loot (%s)", reasonIfZero or "no change")
       PrintNoCoin(reasonIfZero or "no change")
       PPT_LastSummary = nil
