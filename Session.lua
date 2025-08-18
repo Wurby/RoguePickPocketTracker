@@ -18,6 +18,8 @@ sessionItems = {}
 PPT_LastSummary = nil
 sessionZone = nil
 sessionLocation = nil
+sessionToastShown = false
+sessionToastShown = false  -- Track if we've shown the session toast
 
 -- UI-guard helpers
 recentUI = {}
@@ -101,6 +103,50 @@ function PrintSessionSummary()
     for _,ln in ipairs(lines) do PPTPrint(" ", ln) end
   end
   PPTPrint(" ")
+end
+
+-- Show session completion toast notification
+function ShowSessionToast(useStoredData)
+  -- Only show if session toasts are enabled
+  if not PPT_ShowSessionToasts then
+    return
+  end
+  
+  local copper, itemsCount, items
+  
+  if useStoredData and PPT_LastSessionData then
+    -- Use stored session data for manual commands
+    copper = PPT_LastSessionData.copper or 0
+    itemsCount = PPT_LastSessionData.itemsCount or 0
+    items = PPT_LastSessionData.items or {}
+  else
+    -- Use current session data for real-time display
+    copper = sessionCopper or 0
+    itemsCount = sessionItemsCount or 0
+    items = sessionItems or {}
+  end
+  
+  -- Build the session summary for the toast
+  local sessionSummary = "+" .. coinsToString(copper)
+  
+  local description = ""
+  if itemsCount > 0 then
+    local itemLines = {}
+    for name, cnt in pairs(items) do 
+      table.insert(itemLines, string.format("%s x%d", name, cnt)) 
+    end
+    table.sort(itemLines)
+    description = table.concat(itemLines, ", ")
+  else
+    description = "No items obtained this session"
+  end
+  
+  ShowToast({
+    type = "session",
+    name = sessionSummary,
+    description = description,
+    icon = "Interface\\Icons\\Ability_Stealth"
+  })
 end
 
 local function getGroupChannel()
@@ -221,6 +267,7 @@ function resetSession()
   windowEndsAt = 0
   sessionZone = nil
   sessionLocation = nil
+  sessionToastShown = false  -- Reset toast flag for new session
 end
 
 function startSession()
@@ -319,7 +366,22 @@ function finalizeSession(reasonIfZero)
       
       DebugPrint("Finalize: +%s, items %d", coinsToString(sessionCopper), sessionItemsCount)
       local summaryMsg = buildSummaryMessage()
-      PrintSessionSummary()
+      
+      -- Store session data for later retrieval
+      PPT_LastSessionData = {
+        copper = sessionCopper,
+        itemsCount = sessionItemsCount,
+        items = {}
+      }
+      -- Deep copy items table
+      for name, count in pairs(sessionItems) do
+        PPT_LastSessionData.items[name] = count
+      end
+      
+      -- Only show toast if we haven't already shown it (e.g., on combat end)
+      if not sessionToastShown then
+        ShowSessionToast() -- Show toast notification instead of chat spam
+      end
       ShareSummaryAndStats(nil, summaryMsg)
       PPT_LastSummary = summaryMsg
     else

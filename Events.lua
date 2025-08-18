@@ -13,6 +13,8 @@ frame:RegisterEvent("PLAYER_MONEY")
 frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 frame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 frame:RegisterEvent("PLAYER_LOGOUT")
+frame:RegisterEvent("PLAYER_REGEN_ENABLED")  -- Combat end
+frame:RegisterEvent("PLAYER_REGEN_DISABLED") -- Combat start
 
 local function SafeRegister(evt) pcall(frame.RegisterEvent, frame, evt) end
 SafeRegister("MERCHANT_SHOW"); SafeRegister("MAIL_SHOW"); SafeRegister("TAXIMAP_OPENED")
@@ -22,8 +24,17 @@ local pollAccum = 0
 frame:SetScript("OnUpdate", function(_, elapsed)
   if not sessionActive then return end
   pollAccum = pollAccum + elapsed
+  -- Only timeout if not in stealth AND not in combat AND timeout reached
   if (not inStealth) and windowEndsAt > 0 and GetTime() >= windowEndsAt then
-    finalizeSession("timeout"); return
+    -- Check if we're in combat - if so, delay the timeout
+    if UnitAffectingCombat and UnitAffectingCombat("player") then
+      -- Extend timeout while in combat
+      windowEndsAt = GetTime() + 1  -- Check again in 1 second
+      DebugPrint("Session timeout delayed due to combat")
+    else
+      finalizeSession("timeout")
+    end
+    return
   end
   if pollAccum >= POLL_INTERVAL then
     pollAccum = 0
@@ -162,6 +173,18 @@ frame:SetScript("OnEvent", function(_, event, ...)
     end
     DebugPrint(("SV @logout: copper=%d attempts=%d succ=%d items=%d")
       :format(PPT_TotalCopper or -1, PPT_TotalAttempts or -1, PPT_SuccessfulAttempts or -1, PPT_TotalItems or -1))
+      
+  elseif event == "PLAYER_REGEN_ENABLED" then
+    -- Combat ended - show session toast if we have session data and stealth ended
+    if sessionActive and sessionHadPick and (not inStealth) and windowEndsAt > 0 and (sessionCopper > 0 or sessionItemsCount > 0) and not sessionToastShown then
+      DebugPrint("Combat ended with pending session, showing session toast")
+      ShowSessionToast()
+      sessionToastShown = true  -- Mark that we've shown the toast
+    end
+    
+  elseif event == "PLAYER_REGEN_DISABLED" then
+    -- Combat started - we don't need to do anything special here yet
+    DebugPrint("Combat started")
   end
 end)
 
@@ -320,6 +343,9 @@ SlashCmdList["PICKPOCKET"] = function(msg)
   if cmd == "togglemsg" then
     PPT_ShowMsg = not PPT_ShowMsg
     PPTPrint("showMsg =", tostring(PPT_ShowMsg)); return
+  elseif cmd == "toggletoasts" then
+    PPT_ShowSessionToasts = not PPT_ShowSessionToasts
+    PPTPrint("showSessionToasts =", tostring(PPT_ShowSessionToasts)); return
   elseif cmd == "share" then
     if arg1 == "achievements" or arg1 == "ach" then
       ShareAchievements()
@@ -458,36 +484,40 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     end
     return
   elseif cmd == "testalert" then
-    -- Test the achievement alert
-    if showAchievementAlert then
+    -- Test the achievement toast
+    if ShowToast then
       local testAchievement = {
+        type = "achievement",
         name = "Test Achievement",
-        description = "This is a test achievement alert",
+        description = "This is a test achievement toast notification",
         icon = "Interface\\Icons\\INV_Misc_Coin_01"
       }
-      PPTPrint("Testing achievement alert...")
-      showAchievementAlert(testAchievement)
+      PPTPrint("Testing achievement toast...")
+      ShowToast(testAchievement)
     else
-      PPTPrint("showAchievementAlert function not found!")
+      PPTPrint("ShowToast function not found!")
     end
     return
   elseif cmd == "testmulti" then
-    -- Test multiple achievement alerts
-    if showAchievementAlert then
-      PPTPrint("Testing multiple achievement alerts...")
+    -- Test multiple achievement toasts
+    if ShowToast then
+      PPTPrint("Testing multiple achievement toasts...")
       
       local testAchievements = {
         {
+          type = "achievement",
           name = "First Achievement",
           description = "This is the first test achievement",
           icon = "Interface\\Icons\\INV_Misc_Coin_01"
         },
         {
+          type = "achievement",
           name = "Second Achievement", 
           description = "This is the second test achievement",
           icon = "Interface\\Icons\\INV_Misc_Coin_02"
         },
         {
+          type = "achievement",
           name = "Third Achievement",
           description = "This is the third test achievement", 
           icon = "Interface\\Icons\\INV_Misc_Coin_03"
@@ -495,10 +525,71 @@ SlashCmdList["PICKPOCKET"] = function(msg)
       }
       
       for _, achievement in ipairs(testAchievements) do
-        showAchievementAlert(achievement)
+        ShowToast(achievement)
       end
     else
-      PPTPrint("showAchievementAlert function not found!")
+      PPTPrint("ShowToast function not found!")
+    end
+    return
+  elseif cmd == "testsession" then
+    -- Test the session toast
+    if ShowToast then
+      local testSessionToast = {
+        type = "session",
+        name = "+2g 15s 30c",
+        description = "Lockbox x3, Silk Cloth x2, Minor Healing Potion x1",
+        icon = "Interface\\Icons\\Ability_Stealth"
+      }
+      PPTPrint("Testing session toast...")
+      ShowToast(testSessionToast)
+    else
+      PPTPrint("ShowToast function not found!")
+    end
+    return
+  elseif cmd == "testcombat" then
+    -- Test combat end behavior without affecting real session data
+    PPTPrint("Testing combat end session toast...")
+    
+    -- Create test toast directly without modifying session variables
+    if ShowToast then
+      local testSessionToast = {
+        type = "session",
+        name = "+2g 15s",
+        description = "Lockbox x2, Silk Cloth x1",
+        icon = "Interface\\Icons\\Ability_Stealth"
+      }
+      PPTPrint("Simulating combat end with test session data...")
+      ShowToast(testSessionToast)
+    else
+      PPTPrint("ShowToast function not found!")
+    end
+    return
+  elseif cmd == "session" then
+    if PPT_LastSummary or PPT_LastSessionData then
+      if arg1 == "toast" and ShowSessionToast then
+        -- Show last session as toast using stored data
+        ShowSessionToast(true)
+        PPTPrint("Showing last session as toast")
+      elseif arg1 == "print" then
+        -- Show last session as chat print
+        if PPT_LastSummary then
+          PPTPrint("Last session: " .. PPT_LastSummary)
+        else
+          PPTPrint("No session summary available")
+        end
+      else
+        -- Default: show both chat and toast if available
+        if PPT_LastSummary then
+          PPTPrint("Last session: " .. PPT_LastSummary)
+        else
+          PPTPrint("No session summary available")
+        end
+        if ShowSessionToast then
+          ShowSessionToast(true)
+        end
+      end
+    else
+      PPTPrint("No session data available")
     end
     return
   elseif cmd == "forceach" then
@@ -553,7 +644,7 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     return
   elseif cmd == "help" then
     PPTPrint("----- Help -----")
-    PPTPrint("Usage: /pp [togglemsg, share, auto share, reset, debug, items, options, achievements, help, version]")
+    PPTPrint("Usage: /pp [togglemsg, toggletoasts, share, auto share, reset, debug, items, options, achievements, help, version]")
     PPTPrint("Zone commands:")
     PPTPrint("  /pp zone - Show current zone stats")
     PPTPrint("  /pp zone location - Show current location stats")
@@ -565,6 +656,7 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPTPrint("  /pp ui coinage [show/hide/toggle/reset] - Manage coinage tracker")
     PPTPrint("Other commands:")
     PPTPrint("  /pp togglemsg - Toggle loot messages")
+    PPTPrint("  /pp toggletoasts - Toggle session completion toasts")
     PPTPrint("  /pp share - Share totals and last session")
     PPTPrint("  /pp share achievements - Share achievement progress")
     PPTPrint("  /pp share locations - Share top pickpocket locations")
@@ -573,10 +665,13 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPTPrint("  /pp debug - Toggle debug mode")
     PPTPrint("  /pp version - Show data version info")
     PPTPrint("  /pp items - Show cumulative item counts")
+    PPTPrint("  /pp session [toast/print] - Show last session summary")
     PPTPrint("  /pp options - Open options panel")
     PPTPrint("  /pp achievements - Open achievements panel")
-    PPTPrint("  /pp testalert - Test achievement alert (for debugging)")
-    PPTPrint("  /pp testmulti - Test multiple achievement alerts")
+    PPTPrint("  /pp testalert - Test achievement toast (for debugging)")
+    PPTPrint("  /pp testmulti - Test multiple achievement toasts")
+    PPTPrint("  /pp testsession - Test session completion toast")
+    PPTPrint("  /pp testcombat - Test combat end session toast")
     return
   end
 

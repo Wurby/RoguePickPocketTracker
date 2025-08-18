@@ -275,8 +275,14 @@ local function CreateStandaloneOptionsWindow()
   standaloneFrame.showMsg.Text:SetText("Show loot messages")
   standaloneFrame.showMsg:SetScript("OnClick", function(self) PPT_ShowMsg = self:GetChecked() end)
   
+  -- Show session toasts checkbox
+  standaloneFrame.showSessionToasts = CreateFrame("CheckButton", nil, standaloneFrame.optionsView, "InterfaceOptionsCheckButtonTemplate")
+  standaloneFrame.showSessionToasts:SetPoint("TOPLEFT", standaloneFrame.showMsg, "BOTTOMLEFT", 0, -8)
+  standaloneFrame.showSessionToasts.Text:SetText("Show session completion toasts")
+  standaloneFrame.showSessionToasts:SetScript("OnClick", function(self) PPT_ShowSessionToasts = self:GetChecked() end)
+  
   standaloneFrame.shareGroup = CreateFrame("CheckButton", nil, standaloneFrame.optionsView, "InterfaceOptionsCheckButtonTemplate")
-  standaloneFrame.shareGroup:SetPoint("TOPLEFT", standaloneFrame.showMsg, "BOTTOMLEFT", 0, -8)
+  standaloneFrame.shareGroup:SetPoint("TOPLEFT", standaloneFrame.showSessionToasts, "BOTTOMLEFT", 0, -8)
   standaloneFrame.shareGroup.Text:SetText("Auto-share session summaries")
   standaloneFrame.shareGroup:SetScript("OnClick", function(self) PPT_ShareGroup = self:GetChecked() end)
   
@@ -553,6 +559,7 @@ local function CreateStandaloneOptionsWindow()
   standaloneFrame.updateOptions = function(self)
     self.showTrackerCheck:SetChecked(IsCoinageTrackerEnabled())
     self.showMsg:SetChecked(PPT_ShowMsg)
+    self.showSessionToasts:SetChecked(PPT_ShowSessionToasts)
     self.shareGroup:SetChecked(PPT_ShareGroup)
     self.debugMode:SetChecked(PPT_Debug)
     if self.alertOpacitySlider then

@@ -5,8 +5,7 @@
 - Achievement: Pick a lockbox from a raid or dungeon boss
 - Achievement: Pick a lockbox for another player
 - Shortcut button: Announce "Lockpicking services available!" in /say, /party, /guild, or /trade chat
-- Option: Auto-respond to lockpicking requests in whispers
-- add additional ui element for session reporting, similar to achievement toast.
+- ✅ add additional ui element for session reporting, similar to achievement toast.
 - optional (on by default) ui element for location information on map.
 - ✅ optional ui element for total coinage tracking. (COMPLETED - draggable coinage tracker)
 - future creature achievements.
