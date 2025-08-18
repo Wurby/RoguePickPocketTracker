@@ -44,6 +44,8 @@ Access achievements through `/pp achievements` or the options panel!
 - `/pp achievements` - Open the achievements panel
 - `/pp togglemsg` - Toggle loot messages
 - `/pp share` - Share totals and the most recent session summary
+- `/pp share achievements` - Share achievement progress (completed/total)
+- `/pp share locations` - Share top 3 pickpocket locations by attempts
 - `/pp auto share` - Toggle automatic sharing
 - `/pp reset [type]` - Reset statistics with granular options:
   - `/pp reset achievements` - Reset only achievements
@@ -115,6 +117,8 @@ Use `/pp` to access the following commands:
 - `/pp` - Display current statistics and totals
 - `/pp togglemsg` - Toggle pickup messages on/off
 - `/pp share` - Share totals and the most recent session summary
+- `/pp share achievements` - Share achievement progress (completed/total)
+- `/pp share locations` - Share top 3 pickpocket locations by attempts
 - `/pp auto share` - Toggle automatic sharing
 - `/pp reset` - Reset all statistics to zero
 - `/pp debug` - Toggle debug mode for troubleshooting

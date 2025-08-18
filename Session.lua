@@ -158,6 +158,53 @@ function ShareSummaryAndStats(force, summary)
   end
 end
 
+function ShareAchievements()
+  local ch, target = getLastChatTarget()
+  if not ch then return end
+  
+  local completed = getCompletedAchievementsCount()
+  local total = getTotalAchievementsCount()
+  local percentage = total > 0 and math.floor((completed / total) * 100) or 0
+  
+  local msg = string.format("PP Achievements: %d/%d (%d%%) unlocked", completed, total, percentage)
+  SendChatMessage(msg:gsub("|", "||"), ch, nil, target)
+end
+
+function ShareTopLocations()
+  local ch, target = getLastChatTarget()
+  if not ch then return end
+  
+  -- Get top 3 locations by total attempts
+  local locations = {}
+  for location, data in pairs(PPT_LocationStats) do
+    if data.attempts and data.attempts > 0 then
+      table.insert(locations, {
+        name = location,
+        attempts = data.attempts,
+        copper = data.copper or 0
+      })
+    end
+  end
+  
+  -- Sort by attempts (descending)
+  table.sort(locations, function(a, b) return a.attempts > b.attempts end)
+  
+  if #locations == 0 then
+    SendChatMessage("PP Locations: No data yet", ch, nil, target)
+    return
+  end
+  
+  -- Build minimal message with top 3
+  local parts = {}
+  for i = 1, math.min(3, #locations) do
+    local loc = locations[i]
+    table.insert(parts, string.format("%s(%d)", loc.name, loc.attempts))
+  end
+  
+  local msg = "PP Top Locations: " .. table.concat(parts, ", ")
+  SendChatMessage(msg:gsub("|", "||"), ch, nil, target)
+end
+
 ------------------------------------------------------------
 --                     SESSION LIFECYCLE
 ------------------------------------------------------------

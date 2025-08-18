@@ -318,7 +318,13 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPT_ShowMsg = not PPT_ShowMsg
     PPTPrint("showMsg =", tostring(PPT_ShowMsg)); return
   elseif cmd == "share" then
-    ShareSummaryAndStats(true, PPT_LastSummary)
+    if arg1 == "achievements" or arg1 == "ach" then
+      ShareAchievements()
+    elseif arg1 == "locations" or arg1 == "loc" then
+      ShareTopLocations()
+    else
+      ShareSummaryAndStats(true, PPT_LastSummary)
+    end
     return
   elseif cmd == "auto" and arg1 == "share" then
     PPT_ShareGroup = not PPT_ShareGroup
@@ -551,6 +557,8 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPTPrint("Other commands:")
     PPTPrint("  /pp togglemsg - Toggle loot messages")
     PPTPrint("  /pp share - Share totals and last session")
+    PPTPrint("  /pp share achievements - Share achievement progress")
+    PPTPrint("  /pp share locations - Share top pickpocket locations")
     PPTPrint("  /pp auto share - Toggle automatic sharing")
     PPTPrint("  /pp reset [type] - Reset statistics (achievements/coins/locations/all)")
     PPTPrint("  /pp debug - Toggle debug mode")
