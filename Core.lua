@@ -7,6 +7,7 @@
 PPT_ShowMsg              = (PPT_ShowMsg ~= nil) and PPT_ShowMsg or true
 PPT_Debug                = PPT_Debug or false
 PPT_ShareGroup           = (PPT_ShareGroup ~= nil) and PPT_ShareGroup or false
+PPT_ShowSessionToasts    = (PPT_ShowSessionToasts ~= nil) and PPT_ShowSessionToasts or true
 PPT_TotalCopper          = tonumber(PPT_TotalCopper) or 0
 PPT_TotalAttempts        = tonumber(PPT_TotalAttempts) or 0
 PPT_SuccessfulAttempts   = tonumber(PPT_SuccessfulAttempts) or 0
@@ -18,6 +19,7 @@ PPT_DataVersion          = PPT_DataVersion or 0
 PPT_Achievements         = type(PPT_Achievements) == "table" and PPT_Achievements or {}
 PPT_CompletedAchievements = type(PPT_CompletedAchievements) == "table" and PPT_CompletedAchievements or {}
 PPT_AlertOpacity         = tonumber(PPT_AlertOpacity) or 80
+PPT_LastSessionData      = type(PPT_LastSessionData) == "table" and PPT_LastSessionData or nil
 
 ------------------------------------------------------------
 --                    DATA MIGRATION
