@@ -14,6 +14,15 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi
 
+# Check if we're on the main branch
+CURRENT_BRANCH=$(git branch --show-current)
+if [[ "$CURRENT_BRANCH" != "main" ]]; then
+    echo "❌ Error: Can only create releases from the 'main' branch"
+    echo "   Current branch: $CURRENT_BRANCH"
+    echo "   Please switch to main branch first: git checkout main"
+    exit 1
+fi
+
 # Check if working directory is clean
 if ! git diff-index --quiet HEAD --; then
     echo "⚠️  Warning: You have uncommitted changes!"
@@ -221,6 +230,15 @@ echo
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "❌ Aborted."
+    exit 1
+fi
+
+# Double-check we're still on main branch before proceeding
+CURRENT_BRANCH_CHECK=$(git branch --show-current)
+if [[ "$CURRENT_BRANCH_CHECK" != "main" ]]; then
+    echo "❌ Error: Branch changed during script execution!"
+    echo "   Current branch: $CURRENT_BRANCH_CHECK"
+    echo "   Releases can only be created from the 'main' branch"
     exit 1
 fi
 
