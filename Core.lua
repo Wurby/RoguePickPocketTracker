@@ -64,6 +64,7 @@ function migrateData()
       PPT_LocationStats = {}
       PPT_Achievements = {}
       PPT_CompletedAchievements = {}
+      UpdateCoinageTracker()
       DebugPrint("Used fallback manual reset for migration")
     end
     

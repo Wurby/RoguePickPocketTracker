@@ -6,7 +6,7 @@
 ------------------------------------------------------------
 
 -- Achievement definitions with funny names and difficulty scaling
-local ACHIEVEMENT_DATA = {
+ACHIEVEMENT_DATA = {
   -- Mobs pickpocketed per session: 1, 2, 5, 10, 25
   session_mobs = {
     {id = "session_mobs_1", name = "Finger Exercises", description = "Pick pocket 1 mob in a single session", goal = 1, icon = "Interface\\Icons\\INV_Misc_Bag_10"},

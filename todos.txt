@@ -1,5 +1,5 @@
 - Track total number of lockboxes picked
-- Achievement: Pick 100/500/1000 lockboxes
+- Achievement: Pick 1/10/100/1000/10000 lockboxes
 - Achievement: Pick lockboxes of every type (Iron, Steel, Mithril, etc.)
 - Achievement: Pick a lockbox in every major city
 - Achievement: Pick a lockbox from a raid or dungeon boss
@@ -7,4 +7,7 @@
 - Shortcut button: Announce "Lockpicking services available!" in /say, /party, /guild, or /trade chat
 - Option: Auto-respond to lockpicking requests in whispers
 - add additional ui element for session reporting, similar to achievement toast.
-- permenant ui element for tracking.
+- optional (on by default) ui element for location information on map.
+- ✅ optional ui element for total coinage tracking. (COMPLETED - draggable coinage tracker)
+- future creature achievements.
+- donation tab.

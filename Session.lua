@@ -62,6 +62,7 @@ function ResetAllStats()
   PPT_LocationStats = {}
   PPT_Achievements = {}
   PPT_CompletedAchievements = {}
+  UpdateCoinageTracker()
   -- Don't reset PPT_DataVersion on manual reset - only on breaking changes
 end
 
@@ -76,6 +77,7 @@ end
 function ResetCoinsAndItems()
   PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems = 0,0,0,0
   PPT_ItemCounts = {}
+  UpdateCoinageTracker()
   PPTPrint("Coins and items reset.")
 end
 
@@ -238,6 +240,7 @@ function finalizeSession(reasonIfZero)
       local remainder = sessionCopper - mirroredCopperThisSession
       if remainder > 0 then
         PPT_TotalCopper = PPT_TotalCopper + remainder
+        UpdateCoinageTracker()
         DebugPrint("Finalize: committed remainder +%s", coinsToString(remainder))
       end
       
@@ -365,6 +368,7 @@ function sweepMoneyNow()
       DebugPrint("Money(sweep): +%s", coinsToString(diff))
       sessionCopper = sessionCopper + diff
       PPT_TotalCopper = PPT_TotalCopper + diff
+      UpdateCoinageTracker()
       mirroredCopperThisSession = mirroredCopperThisSession + diff
       lastMoney = now
       

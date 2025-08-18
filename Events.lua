@@ -34,6 +34,7 @@ frame:SetScript("OnUpdate", function(_, elapsed)
         DebugPrint("Money(poll): +%s", coinsToString(diff))
         sessionCopper = sessionCopper + diff
         PPT_TotalCopper = PPT_TotalCopper + diff
+        UpdateCoinageTracker()
         mirroredCopperThisSession = mirroredCopperThisSession + diff
       end
       lastMoney = now
@@ -128,6 +129,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
         DebugPrint("Money(chat): +%s", coinsToString(copper))
         sessionCopper = sessionCopper + copper
         PPT_TotalCopper = PPT_TotalCopper + copper
+        UpdateCoinageTracker()
         mirroredCopperThisSession = mirroredCopperThisSession + copper
         if not inStealth then windowEndsAt = math.max(windowEndsAt, GetTime() + 0.25) end
       end
@@ -147,6 +149,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
         DebugPrint("Money(event): +%s", coinsToString(diff))
         sessionCopper = sessionCopper + diff
         PPT_TotalCopper = PPT_TotalCopper + diff
+        UpdateCoinageTracker()
         mirroredCopperThisSession = mirroredCopperThisSession + diff
       end
       lastMoney = now
@@ -511,39 +514,42 @@ SlashCmdList["PICKPOCKET"] = function(msg)
       PPTPrint("Enable debug mode first with /pp debug")
     end
     return
-  elseif cmd == "options" then
-    -- Open options panel (Classic Era compatible)
-    local panel = _G.RoguePickPocketTrackerOptions
-    if panel then
-      -- Try multiple approaches to open the specific panel
-      if InterfaceOptionsFrame_OpenToCategory then
-        InterfaceOptionsFrame_OpenToCategory(panel)
-      elseif InterfaceOptionsFrame_OpenToPanel then
-        InterfaceOptionsFrame_OpenToPanel(panel)
-      elseif Settings and Settings.OpenToCategory then
-        if _G.PPT_SettingsCategory then
-          Settings.OpenToCategory(_G.PPT_SettingsCategory)
-        elseif panel.settingsCategory then
-          Settings.OpenToCategory(panel.settingsCategory)
-        else
-          SettingsPanel:Open()
-        end
+  elseif cmd == "ui" then
+    if arg1 == "coinage" or arg1 == "tracker" then
+      if arg2 == "show" then
+        ShowCoinageTracker()
+        PPTPrint("Coinage tracker shown")
+      elseif arg2 == "hide" then
+        HideCoinageTracker()
+        PPTPrint("Coinage tracker hidden")
+      elseif arg2 == "toggle" then
+        ToggleCoinageTracker()
+        PPTPrint("Coinage tracker " .. (IsCoinageTrackerEnabled() and "shown" or "hidden"))
+      elseif arg2 == "reset" then
+        ResetCoinageTrackerPosition()
+        PPTPrint("Coinage tracker position reset")
       else
-        -- Direct approach - show interface options and our panel
-        if InterfaceOptionsFrame then
-          InterfaceOptionsFrame:Show()
-          -- Force show our panel on top
-          panel:SetParent(InterfaceOptionsFramePanelContainer)
-          panel:Show()
-        elseif SettingsPanel then
-          SettingsPanel:Open()
-          panel:Show()
-        end
+        ToggleCoinageTracker()
+        PPTPrint("Coinage tracker " .. (IsCoinageTrackerEnabled() and "shown" or "hidden"))
       end
     else
-      PPTPrint("Error: Options panel not found!")
+      PPTPrint("UI commands:")
+      PPTPrint("  /pp ui coinage [show/hide/toggle/reset] - Manage coinage tracker")
+      PPTPrint("  /pp ui tracker [show/hide/toggle/reset] - Alias for coinage")
     end
-    PPTPrint("Opening options panel...")
+    return
+  elseif cmd == "tracker" then
+    -- Quick access to toggle coinage tracker
+    ToggleCoinageTracker()
+    PPTPrint("Coinage tracker " .. (IsCoinageTrackerEnabled() and "shown" or "hidden"))
+    return
+  elseif cmd == "options" then
+    -- Open standalone options window
+    if ShowStandaloneOptions then
+      ShowStandaloneOptions()
+    else
+      PPTPrint("Options window not available yet. Try again after addon finishes loading.")
+    end
     return
   elseif cmd == "help" then
     PPTPrint("----- Help -----")
@@ -554,6 +560,9 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPTPrint("  /pp zone all - Show all zone stats")
     PPTPrint("  /pp zone [name] - Show specific zone stats")
     PPTPrint("  /pp zone [name] all - Show all locations in zone")
+    PPTPrint("UI commands:")
+    PPTPrint("  /pp tracker - Toggle coinage tracker")
+    PPTPrint("  /pp ui coinage [show/hide/toggle/reset] - Manage coinage tracker")
     PPTPrint("Other commands:")
     PPTPrint("  /pp togglemsg - Toggle loot messages")
     PPTPrint("  /pp share - Share totals and last session")
