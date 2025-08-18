@@ -131,16 +131,40 @@ if [[ $IS_MAJOR_BUMP == true ]]; then
             sed -i "s/local CURRENT_DATA_VERSION = [0-9]\+/local CURRENT_DATA_VERSION = $NEW_DATA_VERSION/" "$CORE_FILE"
         fi
         
-        # Verify the change
+        # Also add the new version to the breakingVersions array
+        echo "📝 Adding version $NEW_DATA_VERSION to breakingVersions array..."
+        
+        # Find the breakingVersions array and add the new version
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS version - add the new version before the closing brace of breakingVersions
+            sed -i '' "/local breakingVersions = {/,/}/ {
+                /}/ i\\
+    $NEW_DATA_VERSION, -- Breaking change for release v$NEW_VERSION
+            }" "$CORE_FILE"
+        else
+            # Linux version
+            sed -i "/local breakingVersions = {/,/}/ {
+                /}/ i\\    $NEW_DATA_VERSION, -- Breaking change for release v$NEW_VERSION
+            }" "$CORE_FILE"
+        fi
+        
+        # Verify the data version change
         NEW_VERSION_CHECK=$(grep -o 'CURRENT_DATA_VERSION = [0-9]\+' "$CORE_FILE" | grep -o '[0-9]\+')
-        if [[ "$NEW_VERSION_CHECK" == "$NEW_DATA_VERSION" ]]; then
+        
+        # Verify the breaking version was added
+        BREAKING_VERSION_CHECK=$(grep -c "^[[:space:]]*$NEW_DATA_VERSION, -- Breaking change" "$CORE_FILE" || true)
+        
+        if [[ "$NEW_VERSION_CHECK" == "$NEW_DATA_VERSION" ]] && [[ "$BREAKING_VERSION_CHECK" == "1" ]]; then
             echo "✅ Data version updated successfully: $CURRENT_DATA_VERSION → $NEW_DATA_VERSION"
+            echo "✅ Added version $NEW_DATA_VERSION to breakingVersions array"
             
             # Stage the change for git
             git add "$CORE_FILE"
             echo "📦 Staged Core.lua for commit"
         else
-            echo "❌ Error: Failed to update data version in Core.lua"
+            echo "❌ Error: Failed to update data version or breakingVersions in Core.lua"
+            echo "   Data version check: expected $NEW_DATA_VERSION, got $NEW_VERSION_CHECK"
+            echo "   Breaking version check: found $BREAKING_VERSION_CHECK entries"
             exit 1
         fi
     else
@@ -206,6 +230,9 @@ if [[ $IS_MAJOR_BUMP == true ]] && [[ -n "$NEW_DATA_VERSION" ]]; then
     if git diff --staged --name-only | grep -q "Core.lua"; then
         echo "💾 Committing data version bump..."
         git commit -m "Bump data version to $NEW_DATA_VERSION for v$NEW_VERSION
+
+- Updated CURRENT_DATA_VERSION to $NEW_DATA_VERSION
+- Added version $NEW_DATA_VERSION to breakingVersions array
 
 This is a breaking change that will reset user data to ensure
 compatibility with new features and data structures."

@@ -29,7 +29,7 @@ function shouldResetData(savedVersion)
   local breakingVersions = {
     1, -- Location-based analytics introduction
     -- 2, -- Achievement system introduction (non-breaking)
-    -- 3, -- Future breaking change
+    3, -- Breaking change for release versioning
   }
   
   for _, breakingVersion in ipairs(breakingVersions) do
