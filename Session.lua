@@ -16,6 +16,8 @@ attemptedGUIDs = {}      -- one attempt per target per session
 sessionItemsCount = 0
 sessionItems = {}
 PPT_LastSummary = nil
+sessionZone = nil
+sessionLocation = nil
 
 -- UI-guard helpers
 recentUI = {}
@@ -56,6 +58,8 @@ end
 function ResetAllStats()
   PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems = 0,0,0,0
   PPT_ItemCounts = {}
+  PPT_ZoneStats = {}
+  PPT_LocationStats = {}
 end
 
 -- End-of-session block with headers like /pp
@@ -142,12 +146,16 @@ function resetSession()
   attemptedGUIDs = {}
   lastMoney = GetMoney()
   windowEndsAt = 0
+  sessionZone = nil
+  sessionLocation = nil
 end
 
 function startSession()
   sessionActive = true
   resetSession()
-  DebugPrint("Stealth: start")
+  sessionZone = getCurrentZone()
+  sessionLocation = getCurrentLocation()
+  DebugPrint("Stealth: start at %s", sessionLocation)
 end
 
 function finalizeSession(reasonIfZero)
@@ -162,12 +170,23 @@ function finalizeSession(reasonIfZero)
         DebugPrint("Finalize: committed remainder +%s", coinsToString(remainder))
       end
       PPT_SuccessfulAttempts = PPT_SuccessfulAttempts + 1
+      
+      -- Record location-based statistics for successful attempt
+      if sessionZone and sessionLocation then
+        recordPickPocketAttempt(sessionZone, sessionLocation, true, sessionCopper, sessionItemsCount)
+      end
+      
       DebugPrint("Finalize: +%s, items %d", coinsToString(sessionCopper), sessionItemsCount)
       local summaryMsg = buildSummaryMessage()
       PrintSessionSummary()
       ShareSummaryAndStats(nil, summaryMsg)
       PPT_LastSummary = summaryMsg
     else
+      -- Record location-based statistics for failed attempt
+      if sessionZone and sessionLocation then
+        recordPickPocketAttempt(sessionZone, sessionLocation, false, 0, 0)
+      end
+      
       DebugPrint("Finalize: no loot (%s)", reasonIfZero or "no change")
       PrintNoCoin(reasonIfZero or "no change")
       PPT_LastSummary = nil

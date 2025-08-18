@@ -138,14 +138,148 @@ end)
 SLASH_PICKPOCKET1 = "/pp"
 SlashCmdList["PICKPOCKET"] = function(msg)
   msg = (msg or ""):lower()
-  local cmd, arg = msg:match("^(%S+)%s*(.*)$")
+  local cmd, arg1, arg2 = msg:match("^(%S+)%s*(%S*)%s*(.*)$")
+  
+  if cmd == "zone" then
+    if arg1 == "" then
+      -- Show current zone information
+      local currentZone = getCurrentZone()
+      local zoneStats = PPT_ZoneStats[currentZone]
+      
+      if not zoneStats then
+        PPTPrint("No pickpocket data for current zone: " .. currentZone)
+        return
+      end
+      
+      local successRate = zoneStats.attempts > 0 and math.floor((zoneStats.successes / zoneStats.attempts) * 100) or 0
+      PPTPrint("----- " .. currentZone .. " (Current Zone) -----")
+      PPTPrint("Coinage:", coinsToString(zoneStats.copper))
+      PPTPrint("Attempts:", zoneStats.attempts)
+      PPTPrint("Successes:", zoneStats.successes)
+      PPTPrint("Success Rate:", successRate .. "%")
+      PPTPrint("Items:", zoneStats.items)
+      
+      -- Show top locations in current zone
+      local locations = getLocationStatsSummary(currentZone)
+      if #locations > 0 then
+        PPTPrint("----- Top Locations -----")
+        for i = 1, math.min(5, #locations) do
+          local locationData = locations[i]
+          local stats = locationData.stats
+          local locSuccessRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
+          PPTPrint(string.format("%s: %s (%d/%d, %d%%)",
+            locationData.location, coinsToString(stats.copper), stats.successes, stats.attempts, locSuccessRate))
+        end
+      end
+      return
+    elseif arg1 == "location" then
+      -- Show current location information
+      local currentLocation = getCurrentLocation()
+      local locationStats = PPT_LocationStats[currentLocation]
+      
+      if not locationStats then
+        PPTPrint("No pickpocket data for current location: " .. currentLocation)
+        return
+      end
+      
+      local successRate = locationStats.attempts > 0 and math.floor((locationStats.successes / locationStats.attempts) * 100) or 0
+      PPTPrint("----- " .. currentLocation .. " (Current Location) -----")
+      PPTPrint("Coinage:", coinsToString(locationStats.copper))
+      PPTPrint("Attempts:", locationStats.attempts)
+      PPTPrint("Successes:", locationStats.successes)
+      PPTPrint("Success Rate:", successRate .. "%")
+      PPTPrint("Items:", locationStats.items)
+      return
+    elseif arg1 == "all" then
+      -- Show all zones
+      PPTPrint("----- All Zone Statistics -----")
+      local zones = getZoneStatsSummary()
+      if #zones == 0 then
+        PPTPrint("No zone data available.")
+        return
+      end
+      for _, zoneData in ipairs(zones) do
+        local stats = zoneData.stats
+        local successRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
+        PPTPrint(string.format("%s: %s (%d/%d, %d%%, %d items)",
+          zoneData.zone, coinsToString(stats.copper), stats.successes, stats.attempts, successRate, stats.items))
+      end
+      return
+    elseif arg2 == "all" then
+      -- Show all locations in specified zone (case-insensitive search)
+      local targetZone = nil
+      for zone, _ in pairs(PPT_ZoneStats) do
+        if zone:lower():find(arg1:lower(), 1, true) then
+          targetZone = zone
+          break
+        end
+      end
+      
+      if not targetZone then
+        PPTPrint("No zone found matching: " .. arg1)
+        return
+      end
+      
+      PPTPrint("----- Locations in " .. targetZone .. " -----")
+      local locations = getLocationStatsSummary(targetZone)
+      if #locations == 0 then
+        PPTPrint("No location data available for " .. targetZone .. ".")
+        return
+      end
+      for _, locationData in ipairs(locations) do
+        local stats = locationData.stats
+        local successRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
+        PPTPrint(string.format("%s: %s (%d/%d, %d%%, %d items)",
+          locationData.location, coinsToString(stats.copper), stats.successes, stats.attempts, successRate, stats.items))
+      end
+      return
+    elseif arg1 ~= "" then
+      -- Show specific zone stats (case-insensitive search)
+      local targetZone = nil
+      for zone, _ in pairs(PPT_ZoneStats) do
+        if zone:lower():find(arg1:lower(), 1, true) then
+          targetZone = zone
+          break
+        end
+      end
+      
+      if not targetZone then
+        PPTPrint("No zone found matching: " .. arg1)
+        return
+      end
+      
+      local zoneStats = PPT_ZoneStats[targetZone]
+      local successRate = zoneStats.attempts > 0 and math.floor((zoneStats.successes / zoneStats.attempts) * 100) or 0
+      PPTPrint("----- " .. targetZone .. " Statistics -----")
+      PPTPrint("Coinage:", coinsToString(zoneStats.copper))
+      PPTPrint("Attempts:", zoneStats.attempts)
+      PPTPrint("Successes:", zoneStats.successes)
+      PPTPrint("Success Rate:", successRate .. "%")
+      PPTPrint("Items:", zoneStats.items)
+      
+      -- Show top locations in this zone
+      local locations = getLocationStatsSummary(targetZone)
+      if #locations > 0 then
+        PPTPrint("----- Top Locations -----")
+        for i = 1, math.min(5, #locations) do
+          local locationData = locations[i]
+          local stats = locationData.stats
+          local locSuccessRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
+          PPTPrint(string.format("%s: %s (%d/%d, %d%%)",
+            locationData.location, coinsToString(stats.copper), stats.successes, stats.attempts, locSuccessRate))
+        end
+      end
+      return
+    end
+  end
+  
   if cmd == "togglemsg" then
     PPT_ShowMsg = not PPT_ShowMsg
     PPTPrint("showMsg =", tostring(PPT_ShowMsg)); return
   elseif cmd == "share" then
     ShareSummaryAndStats(true, PPT_LastSummary)
     return
-  elseif cmd == "auto" and arg == "share" then
+  elseif cmd == "auto" and arg1 == "share" then
     PPT_ShareGroup = not PPT_ShareGroup
     PPTPrint("auto share =", tostring(PPT_ShareGroup))
     return
@@ -200,6 +334,13 @@ SlashCmdList["PICKPOCKET"] = function(msg)
 
   PPTPrint("----- Totals -----");  PrintTotal()
   PPTPrint("----- Stats -----");   PrintStats()
-  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, share, auto share, reset, debug, items, options]")
+  PPTPrint("----- Help -----")
+  PPTPrint("Usage: /pp [togglemsg, share, auto share, reset, debug, items, options]")
+  PPTPrint("Zone commands:")
+  PPTPrint("  /pp zone - Show current zone stats")
+  PPTPrint("  /pp zone location - Show current location stats")
+  PPTPrint("  /pp zone all - Show all zone stats")
+  PPTPrint("  /pp zone [name] - Show specific zone stats")
+  PPTPrint("  /pp zone [name] all - Show all locations in zone")
 end
 

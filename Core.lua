@@ -12,6 +12,8 @@ PPT_TotalAttempts        = tonumber(PPT_TotalAttempts) or 0
 PPT_SuccessfulAttempts   = tonumber(PPT_SuccessfulAttempts) or 0
 PPT_TotalItems           = tonumber(PPT_TotalItems) or 0
 PPT_ItemCounts           = type(PPT_ItemCounts) == "table" and PPT_ItemCounts or {}
+PPT_ZoneStats            = type(PPT_ZoneStats) == "table" and PPT_ZoneStats or {}
+PPT_LocationStats        = type(PPT_LocationStats) == "table" and PPT_LocationStats or {}
 
 ------------------------------------------------------------
 --                     CONSTANTS / UTILS
@@ -62,5 +64,103 @@ function coinsToString(c)
   if s>0 then table.insert(parts, s.."s") end
   if k>0 or #parts==0 then table.insert(parts, k.."c") end
   return table.concat(parts, " ")
+end
+
+------------------------------------------------------------
+--                    LOCATION HELPERS
+------------------------------------------------------------
+function getCurrentZone()
+  if GetRealZoneText then
+    return GetRealZoneText() or "Unknown Zone"
+  elseif GetZoneText then
+    return GetZoneText() or "Unknown Zone"
+  else
+    return "Unknown Zone"
+  end
+end
+
+function getCurrentLocation()
+  local zone = getCurrentZone()
+  local subZone = ""
+  
+  if GetSubZoneText then
+    subZone = GetSubZoneText()
+  end
+  
+  if subZone and subZone ~= "" and subZone ~= zone then
+    return zone .. " - " .. subZone
+  else
+    return zone
+  end
+end
+
+function initZoneStats(zone)
+  if not PPT_ZoneStats[zone] then
+    PPT_ZoneStats[zone] = {
+      copper = 0,
+      attempts = 0,
+      successes = 0,
+      items = 0
+    }
+  end
+  return PPT_ZoneStats[zone]
+end
+
+function initLocationStats(location)
+  if not PPT_LocationStats[location] then
+    PPT_LocationStats[location] = {
+      copper = 0,
+      attempts = 0,
+      successes = 0,
+      items = 0
+    }
+  end
+  return PPT_LocationStats[location]
+end
+
+function recordPickPocketAttempt(zone, location, wasSuccessful, copper, items)
+  copper = copper or 0
+  items = items or 0
+  
+  -- Update zone stats
+  local zoneStats = initZoneStats(zone)
+  zoneStats.attempts = zoneStats.attempts + 1
+  if wasSuccessful then
+    zoneStats.successes = zoneStats.successes + 1
+  end
+  zoneStats.copper = zoneStats.copper + copper
+  zoneStats.items = zoneStats.items + items
+  
+  -- Update location stats
+  local locationStats = initLocationStats(location)
+  locationStats.attempts = locationStats.attempts + 1
+  if wasSuccessful then
+    locationStats.successes = locationStats.successes + 1
+  end
+  locationStats.copper = locationStats.copper + copper
+  locationStats.items = locationStats.items + items
+  
+  DebugPrint("Location tracking: %s (%s) - attempt=%s, copper=%s, items=%s", 
+             location, zone, tostring(wasSuccessful), tostring(copper), tostring(items))
+end
+
+function getZoneStatsSummary()
+  local zones = {}
+  for zone, stats in pairs(PPT_ZoneStats) do
+    table.insert(zones, {zone = zone, stats = stats})
+  end
+  table.sort(zones, function(a, b) return a.stats.copper > b.stats.copper end)
+  return zones
+end
+
+function getLocationStatsSummary(filterZone)
+  local locations = {}
+  for location, stats in pairs(PPT_LocationStats) do
+    if not filterZone or location:find("^" .. filterZone:gsub("([%(%)%+%-%*%?%[%]%^%$%%%.])","%%%1")) then
+      table.insert(locations, {location = location, stats = stats})
+    end
+  end
+  table.sort(locations, function(a, b) return a.stats.copper > b.stats.copper end)
+  return locations
 end
 
