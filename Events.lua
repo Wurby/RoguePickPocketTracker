@@ -427,40 +427,14 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     for _,ln in ipairs(lines) do PPTPrint(" ", ln) end
     return
   elseif cmd == "achievements" or cmd == "ach" then
-    -- Open options panel to achievements tab
-    local panel = _G.RoguePickPocketTrackerOptions
-    if panel then
-      -- Try to open options panel first
-      if InterfaceOptionsFrame_OpenToCategory then
-        InterfaceOptionsFrame_OpenToCategory(panel)
-      elseif InterfaceOptionsFrame_OpenToPanel then
-        InterfaceOptionsFrame_OpenToPanel(panel)
-      elseif Settings and Settings.OpenToCategory then
-        if _G.PPT_SettingsCategory then
-          Settings.OpenToCategory(_G.PPT_SettingsCategory)
-        elseif panel.settingsCategory then
-          Settings.OpenToCategory(panel.settingsCategory)
-        else
-          SettingsPanel:Open()
-        end
-      else
-        -- Direct approach - show interface options and our panel
-        if InterfaceOptionsFrame then
-          InterfaceOptionsFrame:Show()
-          -- Force show our panel on top
-          panel:SetParent(InterfaceOptionsFramePanelContainer)
-          panel:Show()
-        elseif SettingsPanel then
-          SettingsPanel:Open()
-          panel:Show()
-        end
-      end
-      -- Switch to achievements tab (tab 2)
-      if panel.ShowTab then
-        panel:ShowTab(2)
-      end
-    end
+    -- Open standalone options window to achievements tab
     PPTPrint("Opening achievements panel...")
+    
+    if ShowStandaloneAchievements then
+      ShowStandaloneAchievements()
+    else
+      PPTPrint("Achievements panel not available yet. Please try again.")
+    end
     return
   elseif cmd == "testach" then
     if PPT_Debug then

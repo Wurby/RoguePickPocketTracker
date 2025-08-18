@@ -584,6 +584,17 @@ function ShowStandaloneOptions()
   standaloneFrame:Show()
 end
 
+-- Global function to show achievements tab specifically
+function ShowStandaloneAchievements()
+  if not standaloneFrame then
+    CreateStandaloneOptionsWindow()
+  end
+  
+  standaloneFrame:updateOptions()
+  standaloneFrame:ShowTab(2) -- Show Achievements tab
+  standaloneFrame:Show()
+end
+
 -- Global function to hide standalone options
 function HideStandaloneOptions()
   if standaloneFrame then
