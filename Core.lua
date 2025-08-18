@@ -22,7 +22,7 @@ PPT_AlertOpacity         = tonumber(PPT_AlertOpacity) or 80
 ------------------------------------------------------------
 --                    DATA MIGRATION
 ------------------------------------------------------------
-local CURRENT_DATA_VERSION = 2  -- Increment this when introducing breaking changes
+local CURRENT_DATA_VERSION = 3  -- Increment this when introducing breaking changes
 
 function shouldResetData(savedVersion)
   -- Add version numbers here that require full data reset
