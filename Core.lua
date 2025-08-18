@@ -51,15 +51,23 @@ function migrateData()
   local needsReset, breakingVersion = shouldResetData(savedVersion)
   
   if needsReset then
-    -- Reset all data
-    PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems = 0,0,0,0
-    PPT_ItemCounts = {}
-    PPT_ZoneStats = {}
-    PPT_LocationStats = {}
-    PPT_Achievements = {}
-    PPT_CompletedAchievements = {}
+    -- Use existing reset logic to avoid duplication
+    -- Note: ResetAllStats() is available since this runs during ADDON_LOADED
+    if ResetAllStats then
+      ResetAllStats()
+      DebugPrint("Used ResetAllStats() for migration reset")
+    else
+      -- Fallback: manual reset if function not available (shouldn't happen)
+      PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems = 0,0,0,0
+      PPT_ItemCounts = {}
+      PPT_ZoneStats = {}
+      PPT_LocationStats = {}
+      PPT_Achievements = {}
+      PPT_CompletedAchievements = {}
+      DebugPrint("Used fallback manual reset for migration")
+    end
     
-    -- Notify user
+    -- Notify user about the reset
     PPTPrint("=== DATA RESET NOTICE ===")
     PPTPrint("Your pickpocketing statistics have been reset due to addon improvements.")
     PPTPrint("New features added: Location-based analytics and enhanced zone tracking!")
