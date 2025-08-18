@@ -78,8 +78,8 @@ local standaloneFrame = nil
 local function CreateStandaloneOptionsWindow()
   if standaloneFrame then return standaloneFrame end
   
-  -- Main frame
-  standaloneFrame = CreateFrame("Frame", "PPT_StandaloneOptions", UIParent, "UIPanelDialogTemplate")
+  -- Main frame - use no template to avoid any modal behavior that blocks input
+  standaloneFrame = CreateFrame("Frame", "PPT_StandaloneOptions", UIParent)
   standaloneFrame:SetSize(600, 550)
   standaloneFrame:SetPoint("CENTER")
   standaloneFrame:SetFrameStrata("DIALOG")
@@ -88,19 +88,76 @@ local function CreateStandaloneOptionsWindow()
   standaloneFrame:SetMovable(true)
   standaloneFrame:RegisterForDrag("LeftButton")
   
+  -- Add background
+  local bg = standaloneFrame:CreateTexture(nil, "BACKGROUND")
+  bg:SetAllPoints()
+  bg:SetColorTexture(0.1, 0.1, 0.1, 0.95)
+  
+  -- Add border
+  local borderSize = 2
+  local borderTop = standaloneFrame:CreateTexture(nil, "BORDER")
+  borderTop:SetHeight(borderSize)
+  borderTop:SetPoint("TOPLEFT", 0, 0)
+  borderTop:SetPoint("TOPRIGHT", 0, 0)
+  borderTop:SetColorTexture(0.6, 0.6, 0.6, 1)
+  
+  local borderBottom = standaloneFrame:CreateTexture(nil, "BORDER")
+  borderBottom:SetHeight(borderSize)
+  borderBottom:SetPoint("BOTTOMLEFT", 0, 0)
+  borderBottom:SetPoint("BOTTOMRIGHT", 0, 0)
+  borderBottom:SetColorTexture(0.6, 0.6, 0.6, 1)
+  
+  local borderLeft = standaloneFrame:CreateTexture(nil, "BORDER")
+  borderLeft:SetWidth(borderSize)
+  borderLeft:SetPoint("TOPLEFT", 0, 0)
+  borderLeft:SetPoint("BOTTOMLEFT", 0, 0)
+  borderLeft:SetColorTexture(0.6, 0.6, 0.6, 1)
+  
+  local borderRight = standaloneFrame:CreateTexture(nil, "BORDER")
+  borderRight:SetWidth(borderSize)
+  borderRight:SetPoint("TOPRIGHT", 0, 0)
+  borderRight:SetPoint("BOTTOMRIGHT", 0, 0)
+  borderRight:SetColorTexture(0.6, 0.6, 0.6, 1)
+  
+  -- Add close button manually
+  local closeButton = CreateFrame("Button", nil, standaloneFrame, "UIPanelCloseButton")
+  closeButton:SetPoint("TOPRIGHT", standaloneFrame, "TOPRIGHT", -5, -5)
+  
+  -- Enable keyboard input but propagate movement keys
+  standaloneFrame:EnableKeyboard(true)
+  standaloneFrame:SetPropagateKeyboardInput(true)
+  
   -- Make it draggable
   standaloneFrame:SetScript("OnDragStart", standaloneFrame.StartMoving)
   standaloneFrame:SetScript("OnDragStop", standaloneFrame.StopMovingOrSizing)
   
-  -- ESC key handling
+  -- ESC key handling - only capture ESC, let other keys through
   standaloneFrame:SetScript("OnKeyDown", function(self, key)
     if key == "ESCAPE" then
       self:Hide()
+      return
     end
+    -- Propagate all other keys (including WASD movement)
+    self:SetPropagateKeyboardInput(true)
   end)
   
   -- Close on ESC (alternative method)
   table.insert(UISpecialFrames, "PPT_StandaloneOptions")
+  
+  -- Ensure all child frames propagate keyboard input
+  local function EnableKeyboardPropagation(frame)
+    -- Only apply to frames that can have keyboard input
+    if frame.EnableKeyboard and frame.SetPropagateKeyboardInput then
+      frame:EnableKeyboard(true)
+      frame:SetPropagateKeyboardInput(true)
+    end
+    
+    -- Recursively apply to all children
+    local children = {frame:GetChildren()}
+    for _, child in ipairs(children) do
+      EnableKeyboardPropagation(child)
+    end
+  end
   
   -- Title (manually set since SetTitle doesn't exist in Classic Era)
   if standaloneFrame.Title then
@@ -566,6 +623,9 @@ local function CreateStandaloneOptionsWindow()
       self.alertOpacitySlider:SetValue((PPT_AlertOpacity or 80) / 100)
     end
   end
+  
+  -- Apply keyboard propagation to all child frames
+  EnableKeyboardPropagation(standaloneFrame)
   
   -- Hide initially
   standaloneFrame:Hide()
