@@ -12,6 +12,66 @@ PPT_TotalAttempts        = tonumber(PPT_TotalAttempts) or 0
 PPT_SuccessfulAttempts   = tonumber(PPT_SuccessfulAttempts) or 0
 PPT_TotalItems           = tonumber(PPT_TotalItems) or 0
 PPT_ItemCounts           = type(PPT_ItemCounts) == "table" and PPT_ItemCounts or {}
+PPT_ZoneStats            = type(PPT_ZoneStats) == "table" and PPT_ZoneStats or {}
+PPT_LocationStats        = type(PPT_LocationStats) == "table" and PPT_LocationStats or {}
+PPT_DataVersion          = PPT_DataVersion or 0
+
+------------------------------------------------------------
+--                    DATA MIGRATION
+------------------------------------------------------------
+local CURRENT_DATA_VERSION = 1  -- Increment this when introducing breaking changes
+
+function shouldResetData(savedVersion)
+  -- Add version numbers here that require full data reset
+  local breakingVersions = {
+    1, -- Location-based analytics introduction
+    -- 2, -- Future breaking change
+    -- 3, -- Another future breaking change
+  }
+  
+  for _, breakingVersion in ipairs(breakingVersions) do
+    if savedVersion < breakingVersion then
+      return true, breakingVersion
+    end
+  end
+  return false, nil
+end
+
+function migrateData()
+  local savedVersion = PPT_DataVersion or 0
+  
+  if savedVersion == CURRENT_DATA_VERSION then
+    DebugPrint("Data version %d current, no migration needed", savedVersion)
+    return
+  end
+  
+  local needsReset, breakingVersion = shouldResetData(savedVersion)
+  
+  if needsReset then
+    -- Reset all data
+    PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems = 0,0,0,0
+    PPT_ItemCounts = {}
+    PPT_ZoneStats = {}
+    PPT_LocationStats = {}
+    
+    -- Notify user
+    PPTPrint("=== DATA RESET NOTICE ===")
+    PPTPrint("Your pickpocketing statistics have been reset due to addon improvements.")
+    PPTPrint("New features added: Location-based analytics and enhanced zone tracking!")
+    PPTPrint("This was necessary to ensure data accuracy with the new zone tracking system.")
+    PPTPrint("Your progress will now be tracked more accurately.")
+    PPTPrint("=========================")
+    
+    DebugPrint("Data reset performed: v%d -> v%d (breaking change in v%d)", 
+               savedVersion, CURRENT_DATA_VERSION, breakingVersion)
+  else
+    -- Future: Add non-breaking migrations here
+    DebugPrint("Data migrated: v%d -> v%d (no reset needed)", savedVersion, CURRENT_DATA_VERSION)
+  end
+  
+  -- Update version
+  PPT_DataVersion = CURRENT_DATA_VERSION
+end
 
 ------------------------------------------------------------
 --                     CONSTANTS / UTILS
@@ -62,5 +122,103 @@ function coinsToString(c)
   if s>0 then table.insert(parts, s.."s") end
   if k>0 or #parts==0 then table.insert(parts, k.."c") end
   return table.concat(parts, " ")
+end
+
+------------------------------------------------------------
+--                    LOCATION HELPERS
+------------------------------------------------------------
+function getCurrentZone()
+  if GetRealZoneText then
+    return GetRealZoneText() or "Unknown Zone"
+  elseif GetZoneText then
+    return GetZoneText() or "Unknown Zone"
+  else
+    return "Unknown Zone"
+  end
+end
+
+function getCurrentLocation()
+  local zone = getCurrentZone()
+  local subZone = ""
+  
+  if GetSubZoneText then
+    subZone = GetSubZoneText()
+  end
+  
+  if subZone and subZone ~= "" and subZone ~= zone then
+    return zone .. " - " .. subZone
+  else
+    return zone
+  end
+end
+
+function initZoneStats(zone)
+  if not PPT_ZoneStats[zone] then
+    PPT_ZoneStats[zone] = {
+      copper = 0,
+      attempts = 0,
+      successes = 0,
+      items = 0
+    }
+  end
+  return PPT_ZoneStats[zone]
+end
+
+function initLocationStats(location)
+  if not PPT_LocationStats[location] then
+    PPT_LocationStats[location] = {
+      copper = 0,
+      attempts = 0,
+      successes = 0,
+      items = 0
+    }
+  end
+  return PPT_LocationStats[location]
+end
+
+function recordPickPocketAttempt(zone, location, wasSuccessful, copper, items)
+  copper = copper or 0
+  items = items or 0
+  
+  -- Update zone stats
+  local zoneStats = initZoneStats(zone)
+  zoneStats.attempts = zoneStats.attempts + 1
+  if wasSuccessful then
+    zoneStats.successes = zoneStats.successes + 1
+  end
+  zoneStats.copper = zoneStats.copper + copper
+  zoneStats.items = zoneStats.items + items
+  
+  -- Update location stats
+  local locationStats = initLocationStats(location)
+  locationStats.attempts = locationStats.attempts + 1
+  if wasSuccessful then
+    locationStats.successes = locationStats.successes + 1
+  end
+  locationStats.copper = locationStats.copper + copper
+  locationStats.items = locationStats.items + items
+  
+  DebugPrint("Location tracking: %s (%s) - attempt=%s, copper=%s, items=%s", 
+             location, zone, tostring(wasSuccessful), tostring(copper), tostring(items))
+end
+
+function getZoneStatsSummary()
+  local zones = {}
+  for zone, stats in pairs(PPT_ZoneStats) do
+    table.insert(zones, {zone = zone, stats = stats})
+  end
+  table.sort(zones, function(a, b) return a.stats.copper > b.stats.copper end)
+  return zones
+end
+
+function getLocationStatsSummary(filterZone)
+  local locations = {}
+  for location, stats in pairs(PPT_LocationStats) do
+    if not filterZone or location:find("^" .. filterZone:gsub("([%(%)%+%-%*%?%[%]%^%$%%%.])","%%%1")) then
+      table.insert(locations, {location = location, stats = stats})
+    end
+  end
+  table.sort(locations, function(a, b) return a.stats.copper > b.stats.copper end)
+  return locations
 end
 

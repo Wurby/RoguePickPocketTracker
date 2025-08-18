@@ -3,7 +3,7 @@
 ## Notes: Keeps track of total money looted from pickpocketing.
 ## Author: Wurby
 ## Version: @project-version@
-## SavedVariables: PPT_ShowMsg, PPT_Debug, PPT_ShareGroup, PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems, PPT_ItemCounts
+## SavedVariables: PPT_ShowMsg, PPT_Debug, PPT_ShareGroup, PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems, PPT_ItemCounts, PPT_ZoneStats, PPT_LocationStats, PPT_DataVersion
 
 Core.lua
 Session.lua

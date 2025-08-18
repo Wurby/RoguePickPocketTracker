@@ -22,6 +22,11 @@ A World of Warcraft Classic addon that tracks pickpocketing statistics and loot 
 - `/pp reset` - Reset all statistics
 - `/pp debug` - Toggle debug mode
 - `/pp items` - Show cumulative item counts
+- `/pp zone` - Show current zone statistics
+- `/pp zone location` - Show current location statistics
+- `/pp zone all` - Show statistics for all zones
+- `/pp zone [zonename]` - Show detailed statistics for a specific zone
+- `/pp zone [zonename] all` - Show all location statistics within a zone
 
 ## Installation
 
@@ -101,6 +106,8 @@ A World of Warcraft addon that tracks pickpocketing statistics for Rogue charact
 - **Money Tracking**: Automatically tracks gold, silver, and copper gained from pickpocketing
 - **Success Rate Statistics**: Monitors total attempts, successful attempts, and failure rates
 - **Item Tracking**: Records all items looted during pickpocketing sessions
+- **Location-Based Analytics**: Tracks statistics by zone and specific locations
+- **Heat-Map Data**: Accumulates per-area reports for targeted pickpocketing strategies
 - **Session Reports**: Provides detailed reports after each stealth session
 - **Persistent Data**: All statistics are saved between game sessions
 - **Group Sharing**: Optionally broadcast your totals and last session summary to your last chat channel
@@ -132,6 +139,11 @@ Use `/pp` to access the following commands:
 - `/pp reset` - Reset all statistics to zero
 - `/pp debug` - Toggle debug mode for troubleshooting
 - `/pp items` - Display all items collected from pickpocketing
+- `/pp zone` - Display current zone statistics
+- `/pp zone location` - Display current location statistics
+- `/pp zone all` - Display statistics for all zones
+- `/pp zone [zonename]` - Display detailed statistics for a specific zone including top locations
+- `/pp zone [zonename] all` - Display all location statistics within a specified zone
 
 ### Statistics Displayed
 
@@ -142,6 +154,25 @@ Use `/pp` to access the following commands:
 - **Fails**: Failed pickpocket attempts
 - **Average per Attempt**: Average money gained per attempt
 - **Average per Success**: Average money gained per successful attempt
+
+### Location-Based Analytics
+
+The addon now tracks detailed statistics by zone and location:
+
+- **Zone Statistics**: Aggregated data for each zone you've pickpocketed in
+- **Location Statistics**: Fine-grained tracking including sub-zones and specific areas
+- **Success Rates**: Per-location success rates to identify the best farming spots
+- **Heat-Map Data**: Comprehensive area-by-area analysis for optimizing pickpocketing routes
+
+#### Zone Commands
+
+- `/pp zone` - Shows statistics for your current zone
+- `/pp zone location` - Shows statistics for your current location (zone + sub-zone)
+- `/pp zone all` - Lists all zones with their total earnings, attempts, success rates, and item counts
+- `/pp zone Stormwind City` - Shows detailed stats for Stormwind City including top 5 locations
+- `/pp zone Stormwind City all` - Shows complete location breakdown for all areas in Stormwind City
+
+The Options panel also includes a "Zone Statistics" section showing the top 10 most profitable zones.
 
 ## How It Works
 
@@ -168,6 +199,8 @@ The addon saves the following variables automatically:
 - `PPT_SuccessfulAttempts` - Successful attempts
 - `PPT_TotalItems` - Total items looted
 - `PPT_ItemCounts` - Detailed item counts
+- `PPT_ZoneStats` - Statistics by zone
+- `PPT_LocationStats` - Statistics by specific location
 
 ## Requirements
 

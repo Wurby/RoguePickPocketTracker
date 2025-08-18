@@ -59,6 +59,66 @@ panel.statAvgAttempt:SetPoint("TOPLEFT", panel.statFails, "BOTTOMLEFT", 0, -10)
 panel.statAvgSuccess = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
 panel.statAvgSuccess:SetPoint("TOPLEFT", panel.statAvgAttempt, "BOTTOMLEFT", 0, -4)
 
+-- Zone statistics section
+panel.zoneHeader = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+panel.zoneHeader:SetPoint("TOPLEFT", panel.statAvgSuccess, "BOTTOMLEFT", 0, -20)
+panel.zoneHeader:SetText("Zone Statistics:")
+
+panel.zoneScrollFrame = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
+panel.zoneScrollFrame:SetSize(400, 150)
+panel.zoneScrollFrame:SetPoint("TOPLEFT", panel.zoneHeader, "BOTTOMLEFT", 0, -5)
+
+panel.zoneContent = CreateFrame("Frame", nil, panel.zoneScrollFrame)
+panel.zoneContent:SetSize(380, 1)
+panel.zoneScrollFrame:SetScrollChild(panel.zoneContent)
+
+-- Function to update zone statistics display
+function panel:updateZoneStats()
+  -- Check if zone functions are available
+  if not getZoneStatsSummary then
+    return
+  end
+  
+  -- Clear existing zone stat displays
+  if self.zoneStatStrings then
+    for _, fontString in ipairs(self.zoneStatStrings) do
+      fontString:Hide()
+    end
+  end
+  self.zoneStatStrings = {}
+  
+  local zones = getZoneStatsSummary()
+  local yOffset = 0
+  
+  for i, zoneData in ipairs(zones) do
+    if i > 10 then break end  -- Limit to top 10 zones
+    
+    local stats = zoneData.stats
+    local successRate = stats.attempts > 0 and math.floor((stats.successes / stats.attempts) * 100) or 0
+    local text = string.format("%s: %s (%d/%d, %d%%, %d items)",
+      zoneData.zone, coinsToString(stats.copper), stats.successes, stats.attempts, successRate, stats.items)
+    
+    local fontString = self.zoneContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    fontString:SetPoint("TOPLEFT", 0, yOffset)
+    fontString:SetText(text)
+    fontString:SetJustifyH("LEFT")
+    fontString:SetWidth(380)
+    
+    table.insert(self.zoneStatStrings, fontString)
+    yOffset = yOffset - 14
+  end
+  
+  if #zones == 0 then
+    local noDataString = self.zoneContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    noDataString:SetPoint("TOPLEFT", 0, 0)
+    noDataString:SetText("No zone data available yet.")
+    table.insert(self.zoneStatStrings, noDataString)
+    yOffset = -14
+  end
+  
+  self.zoneContent:SetHeight(math.abs(yOffset))
+end
+
 -- Refresh stats display
 function panel:updateStats()
   self.showMsg:SetChecked(PPT_ShowMsg)
@@ -72,6 +132,7 @@ function panel:updateStats()
   local avgSuccess = (PPT_SuccessfulAttempts > 0) and math.floor(PPT_TotalCopper / PPT_SuccessfulAttempts) or 0
   self.statAvgAttempt:SetText("Avg/Attempt: "..coinsToString(avgAttempt))
   self.statAvgSuccess:SetText("Avg/Success: "..coinsToString(avgSuccess))
+  self:updateZoneStats()
 end
 
 panel:SetScript("OnShow", function(self) self:updateStats() end)
