@@ -81,6 +81,16 @@ frame:SetScript("OnEvent", function(_, event, ...)
       if dstGUID and not attemptedGUIDs[dstGUID] then
         attemptedGUIDs[dstGUID] = true
         PPT_TotalAttempts = PPT_TotalAttempts + 1
+        local zone = getCurrentZone()
+        local loc = getCurrentLocation()
+        sessionZone = zone
+        sessionLocation = loc
+        local zs = PPT_ZoneStats[zone] or {attempts=0, successes=0, copper=0}
+        zs.attempts = (zs.attempts or 0) + 1
+        PPT_ZoneStats[zone] = zs
+        local ls = PPT_LocationStats[loc] or {attempts=0, successes=0, copper=0}
+        ls.attempts = (ls.attempts or 0) + 1
+        PPT_LocationStats[loc] = ls
         DebugPrint("Pick: attempt recorded for %s", tostring(dstGUID))
       else
         DebugPrint("Pick: duplicate attempt ignored")
@@ -138,25 +148,36 @@ end)
 SLASH_PICKPOCKET1 = "/pp"
 SlashCmdList["PICKPOCKET"] = function(msg)
   msg = (msg or ""):lower()
-  if msg == "togglemsg" then
+  local cmd, arg = msg:match("^(%S+)%s*(%S*)")
+  cmd = cmd or ""
+  arg = arg or ""
+  if cmd == "togglemsg" then
     PPT_ShowMsg = not PPT_ShowMsg
     PPTPrint("showMsg =", tostring(PPT_ShowMsg)); return
-  elseif msg == "reset" then
+  elseif cmd == "reset" then
     ResetAllStats()
     PPTPrint("Stats reset."); return
-  elseif msg == "debug" then
+  elseif cmd == "debug" then
     PPT_Debug = not PPT_Debug
     PPTPrint("debug =", tostring(PPT_Debug)); return
-  elseif msg == "items" then
+  elseif cmd == "items" then
     PPTPrint("Cumulative items:", PPT_TotalItems)
-    local list = {}
-    for name, cnt in pairs(PPT_ItemCounts) do table.insert(lines, string.format("%s x%d", name, cnt)) end
     local lines = {}
     for name, cnt in pairs(PPT_ItemCounts) do table.insert(lines, string.format("%s x%d", name, cnt)) end
     table.sort(lines, function(a,b) return a:lower() < b:lower() end)
     for _,ln in ipairs(lines) do PPTPrint(" ", ln) end
     return
-  elseif msg == "options" then
+  elseif cmd == "zone" then
+    if arg == "location" or arg == "loc" or arg == "area" then
+      PrintCurrentLocationStats(); return
+    else
+      PrintCurrentZoneStats(); return
+    end
+  elseif cmd == "location" then
+    PrintCurrentLocationStats(); return
+  elseif cmd == "allzones" or cmd == "zones" or cmd == "heat" or cmd == "heatmap" then
+    PrintZoneStats(); return
+  elseif cmd == "options" then
     -- Open options panel (Classic Era compatible)
     local panel = _G.RoguePickPocketTrackerOptions
     if panel then
@@ -194,6 +215,6 @@ SlashCmdList["PICKPOCKET"] = function(msg)
 
   PPTPrint("----- Totals -----");  PrintTotal()
   PPTPrint("----- Stats -----");   PrintStats()
-  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, reset, debug, items, options]")
+  PPTPrint("----- Help -----");    PPTPrint("Usage: /pp [togglemsg, reset, debug, items, zone, zone location, allzones, options]")
 end
 

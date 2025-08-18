@@ -54,6 +54,14 @@ panel.statAvgAttempt:SetPoint("TOPLEFT", panel.statFails, "BOTTOMLEFT", 0, -10)
 panel.statAvgSuccess = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
 panel.statAvgSuccess:SetPoint("TOPLEFT", panel.statAvgAttempt, "BOTTOMLEFT", 0, -4)
 
+panel.zonesHeader = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+panel.zonesHeader:SetPoint("TOPLEFT", panel.statAvgSuccess, "BOTTOMLEFT", 0, -20)
+panel.zonesHeader:SetText("Zones:")
+
+panel.zoneStats = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+panel.zoneStats:SetPoint("TOPLEFT", panel.zonesHeader, "BOTTOMLEFT", 0, -4)
+panel.zoneStats:SetJustifyH("LEFT")
+
 -- Refresh stats display
 function panel:updateStats()
   self.showMsg:SetChecked(PPT_ShowMsg)
@@ -66,6 +74,11 @@ function panel:updateStats()
   local avgSuccess = (PPT_SuccessfulAttempts > 0) and math.floor(PPT_TotalCopper / PPT_SuccessfulAttempts) or 0
   self.statAvgAttempt:SetText("Avg/Attempt: "..coinsToString(avgAttempt))
   self.statAvgSuccess:SetText("Avg/Success: "..coinsToString(avgSuccess))
+  if GetAllZoneStatLines then
+    self.zoneStats:SetText(table.concat(GetAllZoneStatLines(), "\n"))
+  else
+    self.zoneStats:SetText("")
+  end
 end
 
 panel:SetScript("OnShow", function(self) self:updateStats() end)
