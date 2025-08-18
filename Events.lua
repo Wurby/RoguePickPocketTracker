@@ -48,6 +48,16 @@ frame:SetScript("OnEvent", function(_, event, ...)
       -- Perform data migration first
       migrateData()
       
+      -- Initialize achievement system
+      if hookSessionFinalization then
+        hookSessionFinalization()
+      end
+      
+      -- Update achievements with current data
+      if updateAllAchievements then
+        updateAllAchievements()
+      end
+      
       DebugPrint(("SV @load: copper=%d attempts=%d succ=%d items=%d version=%d")
         :format(PPT_TotalCopper or -1, PPT_TotalAttempts or -1, PPT_SuccessfulAttempts or -1, PPT_TotalItems or -1, PPT_DataVersion or -1))
     end
@@ -57,6 +67,11 @@ frame:SetScript("OnEvent", function(_, event, ...)
     inStealth, sessionActive = false, false
     lastMoney = GetMoney()
     if getStealthFlag() then onStealthGained() end
+    
+    -- Try to hook achievements if not already done
+    if tryHookLater and not _PPT_AchievementHookInstalled then
+      tryHookLater()
+    end
 
   elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
     local unitTag, _, spellID = ...
@@ -153,7 +168,14 @@ end)
 SLASH_PICKPOCKET1 = "/pp"
 SlashCmdList["PICKPOCKET"] = function(msg)
   msg = (msg or ""):lower()
-  local cmd, arg1, arg2 = msg:match("^(%S+)%s*(%S*)%s*(.*)$")
+  local args = {}
+  for word in msg:gmatch("%S+") do
+    table.insert(args, word)
+  end
+  
+  local cmd = args[1] or ""
+  local arg1 = args[2] or ""
+  local arg2 = args[3] or ""
   
   if cmd == "zone" then
     if arg1 == "" then
@@ -296,21 +318,77 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPT_ShowMsg = not PPT_ShowMsg
     PPTPrint("showMsg =", tostring(PPT_ShowMsg)); return
   elseif cmd == "share" then
-    ShareSummaryAndStats(true, PPT_LastSummary)
+    if arg1 == "achievements" or arg1 == "ach" then
+      ShareAchievements()
+    elseif arg1 == "locations" or arg1 == "loc" then
+      ShareTopLocations()
+    else
+      ShareSummaryAndStats(true, PPT_LastSummary)
+    end
     return
   elseif cmd == "auto" and arg1 == "share" then
     PPT_ShareGroup = not PPT_ShareGroup
     PPTPrint("auto share =", tostring(PPT_ShareGroup))
     return
   elseif cmd == "reset" then
-    ResetAllStats()
-    PPTPrint("Stats reset."); return
+    if arg1 == "achievements" then
+      ResetAchievements()
+      local panel = _G.RoguePickPocketTrackerOptions
+      if panel and panel.updateAchievements then
+        panel:updateAchievements()
+      end
+      return
+    elseif arg1 == "coins" or arg1 == "money" or arg1 == "items" then
+      ResetCoinsAndItems()
+      local panel = _G.RoguePickPocketTrackerOptions
+      if panel and panel.updateStats then
+        panel:updateStats()
+      end
+      return
+    elseif arg1 == "locations" or arg1 == "zones" then
+      ResetLocations()
+      local panel = _G.RoguePickPocketTrackerOptions
+      if panel and panel.updateStats then
+        panel:updateStats()
+      end
+      return
+    elseif arg1 == "all" and arg2 == "confirm" then
+      ResetAllStats()
+      PPTPrint("All statistics and achievements reset.")
+      local panel = _G.RoguePickPocketTrackerOptions
+      if panel then
+        if panel.updateStats then panel:updateStats() end
+        if panel.updateAchievements then panel:updateAchievements() end
+      end
+      return
+    elseif arg1 == "all" then
+      -- Show confirmation dialog for full reset
+      PPTPrint("*** WARNING: This will reset ALL statistics and achievements! ***")
+      PPTPrint("Type '/pp reset all confirm' to proceed, or anything else to cancel.")
+      return
+    else
+      -- Show reset options
+      PPTPrint("----- Reset Options -----")
+      PPTPrint("/pp reset achievements - Reset only achievements")
+      PPTPrint("/pp reset coins - Reset only coins and items")
+      PPTPrint("/pp reset locations - Reset only zone/location data") 
+      PPTPrint("/pp reset all - Reset everything (requires confirmation)")
+      PPTPrint("Current /pp reset behavior changed - see options above")
+      return
+    end
   elseif cmd == "debug" then
     PPT_Debug = not PPT_Debug
-    PPTPrint("debug =", tostring(PPT_Debug)); return
+    PPTPrint("debug =", tostring(PPT_Debug))
+    
+    -- Test achievement system if debug is enabled
+    if PPT_Debug and updateAllAchievements then
+      PPTPrint("Testing achievement system...")
+      updateAllAchievements()
+    end
+    return
   elseif cmd == "version" then
     PPTPrint("Data version:", PPT_DataVersion or 0)
-    PPTPrint("Current version:", 1)  -- Update this when CURRENT_DATA_VERSION changes
+    PPTPrint("Current version:", 2)  -- Update this when CURRENT_DATA_VERSION changes
     return
   elseif cmd == "items" then
     PPTPrint("Cumulative items:", PPT_TotalItems)
@@ -318,6 +396,120 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     for name, cnt in pairs(PPT_ItemCounts) do table.insert(lines, string.format("%s x%d", name, cnt)) end
     table.sort(lines, function(a,b) return a:lower() < b:lower() end)
     for _,ln in ipairs(lines) do PPTPrint(" ", ln) end
+    return
+  elseif cmd == "achievements" or cmd == "ach" then
+    -- Open options panel to achievements tab
+    local panel = _G.RoguePickPocketTrackerOptions
+    if panel then
+      -- Try to open options panel first
+      if InterfaceOptionsFrame_OpenToCategory then
+        InterfaceOptionsFrame_OpenToCategory(panel)
+      elseif InterfaceOptionsFrame_OpenToPanel then
+        InterfaceOptionsFrame_OpenToPanel(panel)
+      elseif Settings and Settings.OpenToCategory then
+        if _G.PPT_SettingsCategory then
+          Settings.OpenToCategory(_G.PPT_SettingsCategory)
+        elseif panel.settingsCategory then
+          Settings.OpenToCategory(panel.settingsCategory)
+        else
+          SettingsPanel:Open()
+        end
+      else
+        -- Direct approach - show interface options and our panel
+        if InterfaceOptionsFrame then
+          InterfaceOptionsFrame:Show()
+          -- Force show our panel on top
+          panel:SetParent(InterfaceOptionsFramePanelContainer)
+          panel:Show()
+        elseif SettingsPanel then
+          SettingsPanel:Open()
+          panel:Show()
+        end
+      end
+      -- Switch to achievements tab (tab 2)
+      if panel.ShowTab then
+        panel:ShowTab(2)
+      end
+    end
+    PPTPrint("Opening achievements panel...")
+    return
+  elseif cmd == "testach" then
+    if PPT_Debug then
+      PPTPrint("Testing achievement system...")
+      PPTPrint("Current stats - Copper: %d, Attempts: %d, Success: %d, Items: %d", 
+               PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems)
+      
+      if updateAllAchievements then
+        updateAllAchievements()
+      else
+        PPTPrint("updateAllAchievements function not found!")
+      end
+      
+      if hookSessionFinalization then
+        hookSessionFinalization()
+      else
+        PPTPrint("hookSessionFinalization function not found!")
+      end
+    else
+      PPTPrint("Enable debug mode first with /pp debug")
+    end
+    return
+  elseif cmd == "testalert" then
+    -- Test the achievement alert
+    if showAchievementAlert then
+      local testAchievement = {
+        name = "Test Achievement",
+        description = "This is a test achievement alert",
+        icon = "Interface\\Icons\\INV_Misc_Coin_01"
+      }
+      PPTPrint("Testing achievement alert...")
+      showAchievementAlert(testAchievement)
+    else
+      PPTPrint("showAchievementAlert function not found!")
+    end
+    return
+  elseif cmd == "testmulti" then
+    -- Test multiple achievement alerts
+    if showAchievementAlert then
+      PPTPrint("Testing multiple achievement alerts...")
+      
+      local testAchievements = {
+        {
+          name = "First Achievement",
+          description = "This is the first test achievement",
+          icon = "Interface\\Icons\\INV_Misc_Coin_01"
+        },
+        {
+          name = "Second Achievement", 
+          description = "This is the second test achievement",
+          icon = "Interface\\Icons\\INV_Misc_Coin_02"
+        },
+        {
+          name = "Third Achievement",
+          description = "This is the third test achievement", 
+          icon = "Interface\\Icons\\INV_Misc_Coin_03"
+        }
+      }
+      
+      for _, achievement in ipairs(testAchievements) do
+        showAchievementAlert(achievement)
+      end
+    else
+      PPTPrint("showAchievementAlert function not found!")
+    end
+    return
+  elseif cmd == "forceach" then
+    if PPT_Debug then
+      PPTPrint("Forcing achievement update...")
+      if updateAllAchievements then
+        updateAllAchievements()
+        PPTPrint("Achievement update forced.")
+      else
+        PPTPrint("updateAllAchievements function not found!")
+      end
+    else
+      PPTPrint("Enable debug mode first with /pp debug")
+    end
     return
   elseif cmd == "options" then
     -- Open options panel (Classic Era compatible)
@@ -355,7 +547,7 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     return
   elseif cmd == "help" then
     PPTPrint("----- Help -----")
-    PPTPrint("Usage: /pp [togglemsg, share, auto share, reset, debug, items, options, help, version]")
+    PPTPrint("Usage: /pp [togglemsg, share, auto share, reset, debug, items, options, achievements, help, version]")
     PPTPrint("Zone commands:")
     PPTPrint("  /pp zone - Show current zone stats")
     PPTPrint("  /pp zone location - Show current location stats")
@@ -365,12 +557,17 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPTPrint("Other commands:")
     PPTPrint("  /pp togglemsg - Toggle loot messages")
     PPTPrint("  /pp share - Share totals and last session")
+    PPTPrint("  /pp share achievements - Share achievement progress")
+    PPTPrint("  /pp share locations - Share top pickpocket locations")
     PPTPrint("  /pp auto share - Toggle automatic sharing")
-    PPTPrint("  /pp reset - Reset all statistics")
+    PPTPrint("  /pp reset [type] - Reset statistics (achievements/coins/locations/all)")
     PPTPrint("  /pp debug - Toggle debug mode")
     PPTPrint("  /pp version - Show data version info")
     PPTPrint("  /pp items - Show cumulative item counts")
     PPTPrint("  /pp options - Open options panel")
+    PPTPrint("  /pp achievements - Open achievements panel")
+    PPTPrint("  /pp testalert - Test achievement alert (for debugging)")
+    PPTPrint("  /pp testmulti - Test multiple achievement alerts")
     return
   end
 

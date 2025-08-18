@@ -15,18 +15,21 @@ PPT_ItemCounts           = type(PPT_ItemCounts) == "table" and PPT_ItemCounts or
 PPT_ZoneStats            = type(PPT_ZoneStats) == "table" and PPT_ZoneStats or {}
 PPT_LocationStats        = type(PPT_LocationStats) == "table" and PPT_LocationStats or {}
 PPT_DataVersion          = PPT_DataVersion or 0
+PPT_Achievements         = type(PPT_Achievements) == "table" and PPT_Achievements or {}
+PPT_CompletedAchievements = type(PPT_CompletedAchievements) == "table" and PPT_CompletedAchievements or {}
+PPT_AlertOpacity         = tonumber(PPT_AlertOpacity) or 80
 
 ------------------------------------------------------------
 --                    DATA MIGRATION
 ------------------------------------------------------------
-local CURRENT_DATA_VERSION = 1  -- Increment this when introducing breaking changes
+local CURRENT_DATA_VERSION = 2  -- Increment this when introducing breaking changes
 
 function shouldResetData(savedVersion)
   -- Add version numbers here that require full data reset
   local breakingVersions = {
     1, -- Location-based analytics introduction
-    -- 2, -- Future breaking change
-    -- 3, -- Another future breaking change
+    -- 2, -- Achievement system introduction (non-breaking)
+    -- 3, -- Future breaking change
   }
   
   for _, breakingVersion in ipairs(breakingVersions) do
@@ -53,6 +56,8 @@ function migrateData()
     PPT_ItemCounts = {}
     PPT_ZoneStats = {}
     PPT_LocationStats = {}
+    PPT_Achievements = {}
+    PPT_CompletedAchievements = {}
     
     -- Notify user
     PPTPrint("=== DATA RESET NOTICE ===")

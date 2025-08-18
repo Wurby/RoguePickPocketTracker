@@ -8,18 +8,50 @@ A World of Warcraft Classic addon that tracks pickpocketing statistics and loot 
 - Counts successful and failed pickpocket attempts
 - Records items obtained through pickpocketing
 - Provides detailed statistics and averages
+- **Achievement system with funny milestone rewards**
+- Zone-based and location-based analytics
 - Options panel for configuration
 - Slash commands for quick access
 - Optionally shares total stats and your last session summary to your last chat channel, manually or automatically
+
+## Achievement System
+
+The addon features a comprehensive achievement system with funny names and difficulty scaling:
+
+### Session-Based Achievements
+- **Finger Exercises** (1 mob per session)
+- **Double Trouble** (2 mobs per session)
+- **Handful of Coins** (5 mobs per session)
+- **Master Thief** (10 mobs per session)
+
+### Item Collection
+- **Shiny Trinket** (1 item per session)
+- **Pocket Full** (2 items per session)
+- **Treasure Hunter** (5 items per session)
+
+### Total Statistics
+- **Getting Started** to **Legendary Thief** (10 to 10,000 total mobs)
+- **Coin Collector** to **Scrooge McDuck** (1 silver to 100 gold total)
+- **First Find** to **Museum Curator** (1 to 1,000 total items)
+- **Tourist** to **Globe Trotter** (1 to 20+ zones visited)
+
+Access achievements through `/pp achievements` or the options panel!
 
 ## Slash Commands
 
 - `/pp` - Show statistics and help
 - `/pp options` - Open the options panel
+- `/pp achievements` - Open the achievements panel
 - `/pp togglemsg` - Toggle loot messages
 - `/pp share` - Share totals and the most recent session summary
+- `/pp share achievements` - Share achievement progress (completed/total)
+- `/pp share locations` - Share top 3 pickpocket locations by attempts
 - `/pp auto share` - Toggle automatic sharing
-- `/pp reset` - Reset all statistics
+- `/pp reset [type]` - Reset statistics with granular options:
+  - `/pp reset achievements` - Reset only achievements
+  - `/pp reset coins` - Reset only coins and items
+  - `/pp reset locations` - Reset only zone/location data
+  - `/pp reset all` - Reset everything (requires confirmation)
 - `/pp debug` - Toggle debug mode
 - `/pp items` - Show cumulative item counts
 - `/pp zone` - Show current zone statistics
@@ -85,6 +117,8 @@ Use `/pp` to access the following commands:
 - `/pp` - Display current statistics and totals
 - `/pp togglemsg` - Toggle pickup messages on/off
 - `/pp share` - Share totals and the most recent session summary
+- `/pp share achievements` - Share achievement progress (completed/total)
+- `/pp share locations` - Share top 3 pickpocket locations by attempts
 - `/pp auto share` - Toggle automatic sharing
 - `/pp reset` - Reset all statistics to zero
 - `/pp debug` - Toggle debug mode for troubleshooting

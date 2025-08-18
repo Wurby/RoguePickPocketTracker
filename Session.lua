@@ -60,7 +60,30 @@ function ResetAllStats()
   PPT_ItemCounts = {}
   PPT_ZoneStats = {}
   PPT_LocationStats = {}
+  PPT_Achievements = {}
+  PPT_CompletedAchievements = {}
   -- Don't reset PPT_DataVersion on manual reset - only on breaking changes
+end
+
+-- Reset only achievements
+function ResetAchievements()
+  PPT_Achievements = {}
+  PPT_CompletedAchievements = {}
+  PPTPrint("Achievements reset.")
+end
+
+-- Reset only coins and items
+function ResetCoinsAndItems()
+  PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems = 0,0,0,0
+  PPT_ItemCounts = {}
+  PPTPrint("Coins and items reset.")
+end
+
+-- Reset only location data
+function ResetLocations()
+  PPT_ZoneStats = {}
+  PPT_LocationStats = {}
+  PPTPrint("Location data reset.")
 end
 
 -- End-of-session block with headers like /pp
@@ -135,6 +158,53 @@ function ShareSummaryAndStats(force, summary)
   end
 end
 
+function ShareAchievements()
+  local ch, target = getLastChatTarget()
+  if not ch then return end
+  
+  local completed = getCompletedAchievementsCount()
+  local total = getTotalAchievementsCount()
+  local percentage = total > 0 and math.floor((completed / total) * 100) or 0
+  
+  local msg = string.format("PP Achievements: %d/%d (%d%%) unlocked", completed, total, percentage)
+  SendChatMessage(msg:gsub("|", "||"), ch, nil, target)
+end
+
+function ShareTopLocations()
+  local ch, target = getLastChatTarget()
+  if not ch then return end
+  
+  -- Get top 3 locations by total attempts
+  local locations = {}
+  for location, data in pairs(PPT_LocationStats) do
+    if data.attempts and data.attempts > 0 then
+      table.insert(locations, {
+        name = location,
+        attempts = data.attempts,
+        copper = data.copper or 0
+      })
+    end
+  end
+  
+  -- Sort by attempts (descending)
+  table.sort(locations, function(a, b) return a.attempts > b.attempts end)
+  
+  if #locations == 0 then
+    SendChatMessage("PP Locations: No data yet", ch, nil, target)
+    return
+  end
+  
+  -- Build minimal message with top 3
+  local parts = {}
+  for i = 1, math.min(3, #locations) do
+    local loc = locations[i]
+    table.insert(parts, string.format("%s(%d)", loc.name, loc.attempts))
+  end
+  
+  local msg = "PP Top Locations: " .. table.concat(parts, ", ")
+  SendChatMessage(msg:gsub("|", "||"), ch, nil, target)
+end
+
 ------------------------------------------------------------
 --                     SESSION LIFECYCLE
 ------------------------------------------------------------
@@ -170,7 +240,16 @@ function finalizeSession(reasonIfZero)
         PPT_TotalCopper = PPT_TotalCopper + remainder
         DebugPrint("Finalize: committed remainder +%s", coinsToString(remainder))
       end
-      PPT_SuccessfulAttempts = PPT_SuccessfulAttempts + 1
+      
+      -- Count actual number of successful pickpockets (number of attempted GUIDs)
+      local successfulAttempts = 0
+      for guid, locationData in pairs(attemptedGUIDs) do
+        if guid and guid ~= "" then
+          successfulAttempts = successfulAttempts + 1
+        end
+      end
+      PPT_SuccessfulAttempts = PPT_SuccessfulAttempts + successfulAttempts
+      DebugPrint("Finalize: adding %d successful attempts (total now %d)", successfulAttempts, PPT_SuccessfulAttempts)
       
       -- Update location-based statistics to reflect success and add copper/items
       if sessionZone and sessionLocation then
@@ -288,6 +367,13 @@ function sweepMoneyNow()
       PPT_TotalCopper = PPT_TotalCopper + diff
       mirroredCopperThisSession = mirroredCopperThisSession + diff
       lastMoney = now
+      
+      -- Update total money achievements in real-time
+      if updateTotalAchievementsOnly then
+        updateTotalAchievementsOnly()
+      elseif updateTotalAchievements then
+        updateTotalAchievements()
+      end
     end
   end
 end
@@ -302,5 +388,12 @@ function recordItemLootFromMessage(msg)
   PPT_TotalItems = PPT_TotalItems + qty
   PPT_ItemCounts[name] = (PPT_ItemCounts[name] or 0) + qty
   DebugPrint("Item: +%dx %s", qty, name)
+  
+  -- Update total item achievements in real-time
+  if updateTotalAchievementsOnly then
+    updateTotalAchievementsOnly()
+  elseif updateTotalAchievements then
+    updateTotalAchievements()
+  end
 end
 
