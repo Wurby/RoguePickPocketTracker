@@ -49,12 +49,14 @@ ACHIEVEMENT_DATA = {
     {id = "total_items_1000", name = "Museum Curator", description = "Obtain 1,000 items from pickpocketing", goal = 1000, icon = "Interface\\Icons\\INV_Misc_Note_01"}
   },
   
-  -- Zones pick pocketed: 1, 5, 10, 20
+  -- Zones pick pocketed: 1, 5, 10, 20, 30, all zones
   zones_visited = {
     {id = "zones_1", name = "Tourist", description = "Pick pocket in 1 zone", goal = 1, icon = "Interface\\Icons\\INV_Misc_Map_01"},
     {id = "zones_5", name = "Explorer", description = "Pick pocket in 5 zones", goal = 5, icon = "Interface\\Icons\\INV_Misc_Map_01"},
     {id = "zones_10", name = "World Traveler", description = "Pick pocket in 10 zones", goal = 10, icon = "Interface\\Icons\\INV_Misc_Map_01"},
-    {id = "zones_20", name = "Globe Trotter", description = "Pick pocket in 20 zones", goal = 20, icon = "Interface\\Icons\\INV_Misc_Map_01"}
+    {id = "zones_20", name = "Globe Trotter", description = "Pick pocket in 20 zones", goal = 20, icon = "Interface\\Icons\\INV_Misc_Map_01"},
+    {id = "zones_30", name = "Continental Explorer", description = "Pick pocket in 30 zones", goal = 30, icon = "Interface\\Icons\\INV_Misc_Map_01"},
+    {id = "zones_40", name = "Master of All Realms", description = "Pick pocket in 40+ zones across Azeroth", goal = 40, icon = "Interface\\Icons\\INV_Misc_Map_01"}
   }
 }
 
@@ -406,7 +408,12 @@ end
 
 -- Get achievements by category
 function getAchievementsByCategory(category)
-  return ACHIEVEMENT_DATA[category] or {}
+  local achievements = ACHIEVEMENT_DATA[category] or {}
+  -- Ensure category field is set on each achievement
+  for _, achievement in ipairs(achievements) do
+    achievement.category = category
+  end
+  return achievements
 end
 
 -- Get all categories

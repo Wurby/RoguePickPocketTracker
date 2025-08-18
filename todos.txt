@@ -10,3 +10,4 @@
 - ✅ optional ui element for total coinage tracking. (COMPLETED - draggable coinage tracker)
 - future creature achievements.
 - donation tab.
+- more verbose sharing.

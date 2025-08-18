@@ -457,87 +457,6 @@ SlashCmdList["PICKPOCKET"] = function(msg)
       PPTPrint("Enable debug mode first with /pp debug")
     end
     return
-  elseif cmd == "testalert" then
-    -- Test the achievement toast
-    if ShowToast then
-      local testAchievement = {
-        type = "achievement",
-        name = "Test Achievement",
-        description = "This is a test achievement toast notification",
-        icon = "Interface\\Icons\\INV_Misc_Coin_01"
-      }
-      PPTPrint("Testing achievement toast...")
-      ShowToast(testAchievement)
-    else
-      PPTPrint("ShowToast function not found!")
-    end
-    return
-  elseif cmd == "testmulti" then
-    -- Test multiple achievement toasts
-    if ShowToast then
-      PPTPrint("Testing multiple achievement toasts...")
-      
-      local testAchievements = {
-        {
-          type = "achievement",
-          name = "First Achievement",
-          description = "This is the first test achievement",
-          icon = "Interface\\Icons\\INV_Misc_Coin_01"
-        },
-        {
-          type = "achievement",
-          name = "Second Achievement", 
-          description = "This is the second test achievement",
-          icon = "Interface\\Icons\\INV_Misc_Coin_02"
-        },
-        {
-          type = "achievement",
-          name = "Third Achievement",
-          description = "This is the third test achievement", 
-          icon = "Interface\\Icons\\INV_Misc_Coin_03"
-        }
-      }
-      
-      for _, achievement in ipairs(testAchievements) do
-        ShowToast(achievement)
-      end
-    else
-      PPTPrint("ShowToast function not found!")
-    end
-    return
-  elseif cmd == "testsession" then
-    -- Test the session toast
-    if ShowToast then
-      local testSessionToast = {
-        type = "session",
-        name = "+2g 15s 30c",
-        description = "Lockbox x3, Silk Cloth x2, Minor Healing Potion x1",
-        icon = "Interface\\Icons\\Ability_Stealth"
-      }
-      PPTPrint("Testing session toast...")
-      ShowToast(testSessionToast)
-    else
-      PPTPrint("ShowToast function not found!")
-    end
-    return
-  elseif cmd == "testcombat" then
-    -- Test combat end behavior without affecting real session data
-    PPTPrint("Testing combat end session toast...")
-    
-    -- Create test toast directly without modifying session variables
-    if ShowToast then
-      local testSessionToast = {
-        type = "session",
-        name = "+2g 15s",
-        description = "Lockbox x2, Silk Cloth x1",
-        icon = "Interface\\Icons\\Ability_Stealth"
-      }
-      PPTPrint("Simulating combat end with test session data...")
-      ShowToast(testSessionToast)
-    else
-      PPTPrint("ShowToast function not found!")
-    end
-    return
   elseif cmd == "session" then
     if PPT_LastSummary or PPT_LastSessionData then
       if arg1 == "toast" and ShowSessionToast then
@@ -564,19 +483,6 @@ SlashCmdList["PICKPOCKET"] = function(msg)
       end
     else
       PPTPrint("No session data available")
-    end
-    return
-  elseif cmd == "forceach" then
-    if PPT_Debug then
-      PPTPrint("Forcing achievement update...")
-      if updateAllAchievements then
-        updateAllAchievements()
-        PPTPrint("Achievement update forced.")
-      else
-        PPTPrint("updateAllAchievements function not found!")
-      end
-    else
-      PPTPrint("Enable debug mode first with /pp debug")
     end
     return
   elseif cmd == "ui" then
@@ -642,10 +548,6 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPTPrint("  /pp session [toast/print] - Show last session summary")
     PPTPrint("  /pp options - Open options panel")
     PPTPrint("  /pp achievements - Open achievements panel")
-    PPTPrint("  /pp testalert - Test achievement toast (for debugging)")
-    PPTPrint("  /pp testmulti - Test multiple achievement toasts")
-    PPTPrint("  /pp testsession - Test session completion toast")
-    PPTPrint("  /pp testcombat - Test combat end session toast")
     return
   end
 

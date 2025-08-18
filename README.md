@@ -12,13 +12,15 @@
 - **💬 Group Sharing** - Broadcast your accomplishments to party/guild chat
 - **⚙️ Rich Options Panel** - Customizable settings and detailed statistics view
 - **🔧 Granular Reset Options** - Reset specific data types without losing everything
+- **🎉 Toast Notifications** - Beautiful achievement and session completion alerts
+- **📈 Persistent Coin Tracker** - Real-time coinage display that follows you around
 
 ---
 
 ## 📋 Getting Started
 
 ### Installation
-1. **Download** the latest release from GitHub
+1. **Download** the latest release from GitHub or curseforge.
 2. **Extract** to your `World of Warcraft\_classic_era_\Interface\AddOns\` directory
 3. **Restart** WoW or type `/reload` in-game
 4. **Start pickpocketing** - the addon begins tracking automatically!
@@ -80,6 +82,10 @@ Optimize your pickpocketing routes with detailed zone and location tracking:
 - `/pp share locations` - Share your top 3 pickpocket spots
 - `/pp auto share` - Toggle automatic sharing to chat
 
+**Session & Notifications:**
+- `/pp session [toast/print]` - Show last session summary as toast or text
+- `/pp toggletoasts` - Toggle session completion toast notifications
+
 **Data Management:**
 - `/pp reset [type]` - Granular reset options:
   - `achievements` - Reset only achievements
@@ -95,8 +101,62 @@ Optimize your pickpocketing routes with detailed zone and location tracking:
 - `/pp zone [name] all` - Complete location breakdown
 
 **Utilities:**
+- `/pp tracker` - Toggle persistent coin tracker display
 - `/pp togglemsg` - Toggle loot notification messages
+- `/pp toggletoasts` - Toggle session completion toast notifications
 - `/pp debug` - Toggle debug mode for troubleshooting
+- `/pp ui` - Open standalone options window
+- `/pp version` - Show addon version information
+
+---
+
+## 🎉 Toast Notification System
+
+Experience your achievements with beautiful, non-intrusive notifications:
+
+### Achievement Toasts
+- **Milestone Celebrations** - Elegant popups when you unlock new achievements
+- **Progress Tracking** - Visual feedback for your pickpocketing accomplishments
+- **Customizable Opacity** - Adjust transparency to match your UI preferences
+
+### Session Completion Toasts
+- **Stealth Session Summary** - Automatic notification when stealth sessions end
+- **Loot Summary** - Shows money gained and items obtained at a glance
+- **Smart Timing** - Appears after combat ends to avoid UI clutter during fights
+- **Manual Control** - Use `/pp session toast` to replay your last session summary
+
+### Toast Features
+- **Queue System** - Multiple toasts display in sequence without overlap
+- **Achievement-Style Design** - Familiar look and feel like Blizzard's achievement system
+- **Fade Animations** - Smooth fade-in, hold, and fade-out transitions
+- **Combat-Safe** - Won't interrupt gameplay during critical moments
+
+*Toggle toast notifications with `/pp toggletoasts` or in the options panel.*
+
+---
+
+## 💰 Persistent Coin Tracker
+
+Keep track of your earnings with a sleek, always-visible display:
+
+### Real-Time Display
+- **Live Updates** - Shows your current pickpocketing session earnings in real-time
+- **Session Coinage** - Displays money gained during your current stealth session
+- **Elegant Design** - Minimalist gold-themed UI that matches WoW's aesthetic
+- **Moveable Window** - Drag to position anywhere on your screen
+
+### Smart Behavior
+- **Auto-Hide** - Disappears when not in a pickpocketing session
+- **Combat Safe** - Stays out of the way during important gameplay moments
+- **Persistent Position** - Remembers where you placed it between sessions
+- **Achievement Integration** - Connects with the toast notification system
+
+### Controls
+- **Toggle Display** - Use `/pp tracker` to show/hide the tracker
+- **Reset Position** - Use the options panel to reset to default position
+- **Manual Control** - Works independently of other addon features
+
+*Access tracker settings in the options panel under "Display Options".*
 
 ---
 
@@ -114,6 +174,8 @@ The addon seamlessly integrates with your gameplay by monitoring:
 - **Session Start:** Entering stealth or casting Pick Pocket
 - **Session End:** Stealth expires + 2-second grace period  
 - **Session Reports:** Automatic summary if anything was gained
+- **Toast Notifications:** Achievement-style popups for session completion and milestones
+- **Combat Awareness:** Smart session handling during and after combat encounters
 
 ---
 
@@ -124,6 +186,8 @@ All settings auto-save and include:
 | Setting | Description |
 |---------|-------------|
 | **Show Messages** | Toggle pickup notifications |
+| **Show Session Toasts** | Toggle achievement-style session completion notifications |
+| **Show Coin Tracker** | Toggle persistent real-time coinage display |
 | **Auto Share** | Automatically share session summaries |
 | **Debug Mode** | Enable detailed logging |
 | **Alert Opacity** | Customize achievement notification transparency |
@@ -156,11 +220,13 @@ All settings auto-save and include:
 ## 🚀 Future Features
 
 Exciting features in development:
-- 🔓 **Lockbox Tracking** - Monitor lockpicking statistics
-- 🏆 **Lockbox Achievements** - New milestone categories  
-- 💬 **Lockpicking Services** - Auto-advertise your skills
-- 🖥️ **Permanent UI Elements** - Optional always-visible tracking
-- 📱 **Session Toast Notifications** - Achievement-style alerts
+- 🔓 **Lockbox Tracking** - Monitor lockpicking statistics and success rates
+- 🏆 **Lockbox Achievements** - New milestone categories for lockpicking mastery  
+- 💬 **Lockpicking Services** - Auto-advertise your skills in trade chat
+- � **Mobile-Style Notifications** - Additional notification styles and animations
+- 🎯 **Target Highlighting** - Visual indicators for pickpocketable targets
+- � **Advanced Analytics** - Heat maps and time-based statistics
+- 🔄 **Data Export/Import** - Share statistics between characters
 
 ---
 
@@ -183,6 +249,12 @@ We welcome contributions from the community! Here's how to get involved:
 ```bash
 ./buildAndRelease.sh  # Automated packaging and GitHub release
 ```
+
+**Safety Features:**
+- Only allows releases from the `main` branch for consistency
+- Automated data version bumping for breaking changes
+- Interactive version selection (patch/minor/major/custom)
+- GitHub Actions integration for automated distribution
 
 The project uses GitHub Actions for automated releases when tags are pushed.
 

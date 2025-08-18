@@ -68,6 +68,42 @@ StaticPopupDialogs["PPT_RESET_ALL_CONFIRM"] = {
   preferredIndex = 3,
 }
 
+StaticPopupDialogs["PPT_RESET_ACHIEVEMENTS_CONFIRM"] = {
+  text = "Reset all achievement progress?\nThis cannot be undone!",
+  button1 = "Yes",
+  button2 = "No",
+  OnAccept = function()
+    ResetAchievements()
+    PPTPrint("All achievements reset.")
+    local panel = _G.RoguePickPocketTrackerOptions
+    if panel and panel.updateAchievements then
+      panel:updateAchievements()
+    end
+  end,
+  timeout = 0,
+  whileDead = true,
+  hideOnEscape = true,
+  preferredIndex = 3,
+}
+
+StaticPopupDialogs["PPT_RESET_LOCATIONS_CONFIRM"] = {
+  text = "Reset all location and zone data?\nThis cannot be undone!",
+  button1 = "Yes",
+  button2 = "No",
+  OnAccept = function()
+    ResetLocations()
+    PPTPrint("All location data reset.")
+    local panel = _G.RoguePickPocketTrackerOptions
+    if panel and panel.updateStats then
+      panel:updateStats()
+    end
+  end,
+  timeout = 0,
+  whileDead = true,
+  hideOnEscape = true,
+  preferredIndex = 3,
+}
+
 ------------------------------------------------------------
 --                  STANDALONE OPTIONS WINDOW
 ------------------------------------------------------------
@@ -205,7 +241,7 @@ local function CreateStandaloneOptionsWindow()
   
   -- Create the tabs
   standaloneFrame.tabs[1] = CreateStandaloneTab(standaloneFrame, 1, "Report", 80)
-  standaloneFrame.tabs[1]:SetPoint("TOPLEFT", content, "TOPLEFT", 10, 20)
+  standaloneFrame.tabs[1]:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -10)
   
   standaloneFrame.tabs[2] = CreateStandaloneTab(standaloneFrame, 2, "Achievements", 100)
   standaloneFrame.tabs[2]:SetPoint("LEFT", standaloneFrame.tabs[1], "RIGHT", 5, 0)
@@ -215,16 +251,16 @@ local function CreateStandaloneOptionsWindow()
   
   -- Tab content frames
   standaloneFrame.reportView = CreateFrame("Frame", nil, content)
-  standaloneFrame.reportView:SetPoint("TOPLEFT", standaloneFrame.tabs[1], "BOTTOMLEFT", 0, -10)
+  standaloneFrame.reportView:SetPoint("TOPLEFT", standaloneFrame.tabs[1], "BOTTOMLEFT", 0, -5)
   standaloneFrame.reportView:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -10, 10)
   
   standaloneFrame.achievementsView = CreateFrame("Frame", nil, content)
-  standaloneFrame.achievementsView:SetPoint("TOPLEFT", standaloneFrame.tabs[1], "BOTTOMLEFT", 0, -10)
+  standaloneFrame.achievementsView:SetPoint("TOPLEFT", standaloneFrame.tabs[1], "BOTTOMLEFT", 0, -5)
   standaloneFrame.achievementsView:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -10, 10)
   standaloneFrame.achievementsView:Hide()
   
   standaloneFrame.optionsView = CreateFrame("Frame", nil, content)
-  standaloneFrame.optionsView:SetPoint("TOPLEFT", standaloneFrame.tabs[1], "BOTTOMLEFT", 0, -10)
+  standaloneFrame.optionsView:SetPoint("TOPLEFT", standaloneFrame.tabs[1], "BOTTOMLEFT", 0, -5)
   standaloneFrame.optionsView:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -10, 10)
   standaloneFrame.optionsView:Hide()
   
@@ -385,6 +421,23 @@ local function CreateStandaloneOptionsWindow()
   resetAllBtn:SetText("Reset All Data")
   resetAllBtn:SetScript("OnClick", function() 
     StaticPopup_Show("PPT_RESET_ALL_CONFIRM")
+  end)
+  
+  -- Second row of reset buttons
+  local resetAchievementsBtn = CreateFrame("Button", nil, standaloneFrame.optionsView, "UIPanelButtonTemplate")
+  resetAchievementsBtn:SetSize(140, 22)
+  resetAchievementsBtn:SetPoint("TOPLEFT", resetSessionBtn, "BOTTOMLEFT", 0, -10)
+  resetAchievementsBtn:SetText("Reset Achievements")
+  resetAchievementsBtn:SetScript("OnClick", function() 
+    StaticPopup_Show("PPT_RESET_ACHIEVEMENTS_CONFIRM")
+  end)
+  
+  local resetLocationsBtn = CreateFrame("Button", nil, standaloneFrame.optionsView, "UIPanelButtonTemplate")
+  resetLocationsBtn:SetSize(140, 22)
+  resetLocationsBtn:SetPoint("LEFT", resetAchievementsBtn, "RIGHT", 10, 0)
+  resetLocationsBtn:SetText("Reset Locations")
+  resetLocationsBtn:SetScript("OnClick", function() 
+    StaticPopup_Show("PPT_RESET_LOCATIONS_CONFIRM")
   end)
   
   -- Function to show specific tab in standalone window
@@ -593,7 +646,24 @@ local function CreateStandaloneOptionsWindow()
             entryFrame.name:SetText(nameText)
             entryFrame.name:SetTextColor(1, 1, 1)
             local percentage = getAchievementCompletionPercentage(achievement.id)
-            entryFrame.progress:SetText(string.format("|cffff8000[%d%%]|r\n%d/%d", percentage, progress, achievement.goal))
+            
+            -- Format progress based on achievement category
+            local progressText
+            if achievement.category == "total_money" then
+              -- Use formatted currency for money achievements
+              progressText = string.format("|cffff8000[%d%%]|r\n%s/%s", 
+                percentage, 
+                coinsToString(progress), 
+                coinsToString(achievement.goal))
+            else
+              -- Use regular numbers for other achievements
+              progressText = string.format("|cffff8000[%d%%]|r\n%d/%d", 
+                percentage, 
+                progress, 
+                achievement.goal)
+            end
+            
+            entryFrame.progress:SetText(progressText)
             entryFrame.progress:SetTextColor(1, 0.5, 0)
           end
           
