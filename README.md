@@ -5,6 +5,7 @@
 ## 🚀 Key Features at a Glance
 
 - **💰 Automatic Money & Item Tracking** - Never lose track of your ill-gotten gains
+- **⏱️ Earnings Tracking (Stopwatch)** - Track per-minute and per-hour rates with start/stop controls
 - **🏆 Achievement System** - Funny milestone rewards from "Finger Exercises" to "Scrooge McDuck"
 - **📍 Location Analytics** - Heat-map style zone and location-based statistics  
 - **📊 Session Reports** - Detailed summaries after each stealth session
@@ -13,9 +14,10 @@
 - **⚙️ Rich Options Panel** - Customizable settings and detailed statistics view
 - **🔧 Granular Reset Options** - Reset specific data types without losing everything
 - **🎉 Toast Notifications** - Beautiful achievement and session completion alerts
-- **📈 Persistent Coin Tracker** - Real-time coinage display that follows you around
-
----
+- **📈 Persistent Coin Tracker** - Real-time coinage display with tracking controls
+- **🔧 Debug Tools** - Money tracking diagnostics and troubleshooting commands
+- **⏱️ Stopwatch Feature**  - Track your pickpocketing sessions with a built-in stopwatch
+- **📊 Session Analytics** - In-depth analysis of each pickpocketing sessio
 
 ## 📋 Getting Started
 
@@ -82,9 +84,19 @@ Optimize your pickpocketing routes with detailed zone and location tracking:
 - `/pp share locations` - Share your top 3 pickpocket spots
 - `/pp auto share` - Toggle automatic sharing to chat
 
+**Earnings Tracking:**
+- `/pp track start/stop/toggle` - Control earnings tracking (stopwatch)
+- `/pp track status` - Show current tracking statistics  
+- `/pp track report` - Detailed tracking report as toast notification
+- `/pp track reset` - Reset current tracking session
+
 **Session & Notifications:**
 - `/pp session [toast/print]` - Show last session summary as toast or text
 - `/pp toggletoasts` - Toggle session completion toast notifications
+
+**UI & Display:**
+- `/pp tracker` - Toggle persistent coin tracker display
+- `/pp ui coinage [show/hide/toggle/reset]` - Manage coinage tracker
 
 **Data Management:**
 - `/pp reset [type]` - Granular reset options:
@@ -105,6 +117,7 @@ Optimize your pickpocketing routes with detailed zone and location tracking:
 - `/pp togglemsg` - Toggle loot notification messages
 - `/pp toggletoasts` - Toggle session completion toast notifications
 - `/pp debug` - Toggle debug mode for troubleshooting
+- `/pp moneycheck` - Check money tracking state (for debugging)
 - `/pp ui` - Open standalone options window
 - `/pp version` - Show addon version information
 
@@ -135,26 +148,28 @@ Experience your achievements with beautiful, non-intrusive notifications:
 
 ---
 
-## 💰 Persistent Coin Tracker
+## 💰 Enhanced Persistent Coin Tracker
 
-Keep track of your earnings with a sleek, always-visible display:
+The coin tracker has evolved into a comprehensive earnings display:
 
-### Real-Time Display
-- **Live Updates** - Shows your current pickpocketing session earnings in real-time
-- **Session Coinage** - Displays money gained during your current stealth session
-- **Elegant Design** - Minimalist gold-themed UI that matches WoW's aesthetic
-- **Moveable Window** - Drag to position anywhere on your screen
+### Real-Time Display Features
+- **Total Coinage** - Your lifetime pickpocketing earnings always visible
+- **Session Earnings** - Current stealth session progress (when applicable)
+- **Tracking Stats** - Live per-minute and per-hour rates during tracking sessions
+- **Timer Display** - Shows elapsed time when tracking is active
+- **Control Buttons** - Integrated start/stop controls for earnings tracking
 
-### Smart Behavior
-- **Auto-Hide** - Disappears when not in a pickpocketing session
-- **Combat Safe** - Stays out of the way during important gameplay moments
-- **Persistent Position** - Remembers where you placed it between sessions
-- **Achievement Integration** - Connects with the toast notification system
+### Advanced UI Features
+- **Moveable & Resizable** - Drag to position, automatically sizes to content
+- **Anchor System** - Optional visible anchor for precise positioning
+- **Background Customization** - Adjustable colors and transparency
+- **Smart Visibility** - Shows relevant information based on current state
+- **Session Integration** - Displays session info when active, tracking when enabled
 
-### Controls
-- **Toggle Display** - Use `/pp tracker` to show/hide the tracker
-- **Reset Position** - Use the options panel to reset to default position
-- **Manual Control** - Works independently of other addon features
+### Tracker Commands
+- `/pp tracker` - Quick toggle for the display
+- `/pp ui coinage [show/hide/toggle/reset]` - Full control options
+- Options panel has complete customization settings
 
 *Access tracker settings in the options panel under "Display Options".*
 
@@ -166,9 +181,10 @@ The addon seamlessly integrates with your gameplay by monitoring:
 
 - **🥷 Stealth Detection** - Automatically starts sessions when you enter stealth
 - **✋ Spell Casting** - Detects Pick Pocket usage and attempts
-- **💰 Money Changes** - Tracks increases to your character's money
+- **💰 Money Changes** - Tracks increases to your character's money with safety checks
 - **📦 Loot Messages** - Parses chat for pickpocketed items
 - **⚔️ Combat Log** - Records successes and failures for analytics
+- **⏱️ Earnings Tracking** - Optional stopwatch feature for performance measurement
 
 ### Session Management
 - **Session Start:** Entering stealth or casting Pick Pocket
@@ -176,6 +192,7 @@ The addon seamlessly integrates with your gameplay by monitoring:
 - **Session Reports:** Automatic summary if anything was gained
 - **Toast Notifications:** Achievement-style popups for session completion and milestones
 - **Combat Awareness:** Smart session handling during and after combat encounters
+- **Tracking Integration:** Optional earnings tracking with start/stop controls
 
 ---
 
@@ -188,9 +205,13 @@ All settings auto-save and include:
 | **Show Messages** | Toggle pickup notifications |
 | **Show Session Toasts** | Toggle achievement-style session completion notifications |
 | **Show Coin Tracker** | Toggle persistent real-time coinage display |
+| **Enable Earnings Tracking** | Enable/disable the stopwatch tracking feature |
+| **Show Session Info** | Display session information in the coin tracker |
 | **Auto Share** | Automatically share session summaries |
 | **Debug Mode** | Enable detailed logging |
 | **Alert Opacity** | Customize achievement notification transparency |
+| **Tracker Position** | Customize coin tracker anchor point and position |
+| **Background Color** | Customize tracker background color and transparency |
 
 *Plus comprehensive tracking of coins, attempts, items, zones, locations, and achievement progress.*
 
@@ -210,8 +231,13 @@ All settings auto-save and include:
 1. ✅ Verify you're playing a Rogue character
 2. ✅ Enable debug mode with `/pp debug`
 3. ✅ Check addon is loaded in your AddOns menu
-4. ✅ Ensure you're pickpocketing (not just looting corpses)
+4. ✅ Ensure you're pickpocketing
 5. ✅ Try `/reload` to refresh the UI
+
+**Money tracking issues?**
+- Use `/pp moneycheck` to diagnose money tracking state
+- Check if earnings tracking is enabled in options (`/pp options`)
+- Verify you're in a pickpocketing session when expecting tracking
 
 **Need help?** Check the [Issues](https://github.com/Wurby/RoguePickPocketTracker/issues) page or submit a bug report!
 
@@ -223,10 +249,15 @@ Exciting features in development:
 - 🔓 **Lockbox Tracking** - Monitor lockpicking statistics and success rates
 - 🏆 **Lockbox Achievements** - New milestone categories for lockpicking mastery  
 - 💬 **Lockpicking Services** - Auto-advertise your skills in trade chat
-- � **Mobile-Style Notifications** - Additional notification styles and animations
 - 🎯 **Target Highlighting** - Visual indicators for pickpocketable targets
-- � **Advanced Analytics** - Heat maps and time-based statistics
-- 🔄 **Data Export/Import** - Share statistics between characters
+- 📊 **Advanced Analytics** - Heat maps and time-based statistics dashboards
+- 🎨 **Theme Customization** - Multiple UI themes and color schemes
+
+### Recently Completed ✅
+- ⏱️ **Earnings Tracking (Stopwatch)** - Real-time per-minute/hour rate tracking
+- 🛠️ **Enhanced Money Tracking** - Improved safety checks and diagnostics
+- 🎨 **Advanced UI Customization** - Moveable tracker with custom backgrounds
+- 🔧 **Debug Tools** - Comprehensive troubleshooting commands
 
 ---
 
@@ -267,18 +298,6 @@ The project uses GitHub Actions for automated releases when tags are pushed.
 - Open an [Issue](https://github.com/Wurby/RoguePickPocketTracker/issues) with the "enhancement" label
 - Describe the feature and its benefits clearly
 - Consider contributing the implementation yourself!
-
----
-
-## 📄 License
-
-This project is **open source** and available under a permissive license. Feel free to:
-- ✅ Use and modify for personal use
-- ✅ Distribute and share with others  
-- ✅ Fork and create derivative works
-- ✅ Contribute improvements back to the community
-
----
 
 **Happy Pickpocketing! 🥷💰**
 

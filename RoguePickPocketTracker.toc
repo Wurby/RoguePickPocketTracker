@@ -3,13 +3,16 @@
 ## Notes: Keeps track of total money looted from pickpocketing.
 ## Author: Wurby
 ## Version: @project-version@
-## SavedVariables: PPT_ShowMsg, PPT_Debug, PPT_ShareGroup, PPT_ShowSessionToasts, PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems, PPT_ItemCounts, PPT_ZoneStats, PPT_LocationStats, PPT_DataVersion, PPT_Achievements, PPT_CompletedAchievements, PPT_AlertOpacity, PPT_UI_Settings, PPT_LastSessionData
+## SavedVariables: PPT_ShowMsg, PPT_Debug, PPT_ShareGroup, PPT_ShowSessionToasts, PPT_TotalCopper, PPT_TotalAttempts, PPT_SuccessfulAttempts, PPT_TotalItems, PPT_ItemCounts, PPT_ZoneStats, PPT_LocationStats, PPT_DataVersion, PPT_Achievements, PPT_CompletedAchievements, PPT_AlertOpacity, PPT_UI_Settings, PPT_LastSessionData, PPT_StopwatchEnabled, PPT_TrackingActive, PPT_TrackingStartTime, PPT_TrackingStartCopper, PPT_TrackingStartItems, PPT_SessionDisplayEnabled
 
 Core.lua
 Session.lua
 Toast.lua
 Achievements.lua
 Events.lua
-Options.lua
+Options\Main.lua
+Options\Report.lua
+Options\Achievements.lua
+Options\OptionsTab.lua
 UI.lua
 

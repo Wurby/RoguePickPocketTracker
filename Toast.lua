@@ -31,16 +31,37 @@ local TOAST_TYPES = {
     descColor = {0.8, 0.8, 0.8}, -- Light grey description
     defaultTitle = "Stealth Session Complete!",
     defaultIcon = "Interface\\Icons\\Ability_Stealth"
+  },
+  tracking = {
+    backgroundColor = {0.1, 0.1, 0.2, 1}, -- Dark blue
+    borderColor = {0.4, 0.4, 0.7, 1}, -- Blue border
+    glowColor = {0.4, 0.4, 1, 0.1}, -- Subtle blue glow
+    titleColor = {0.6, 0.8, 1}, -- Light blue title
+    textColor = {1, 1, 1}, -- White text
+    descColor = {0.8, 0.8, 0.8}, -- Light grey description
+    defaultTitle = "Tracking Report",
+    defaultIcon = "Interface\\Icons\\INV_Misc_PocketWatch_01"
   }
 }
 
 -- Show a toast notification
-function ShowToast(data)
+function ShowToast(data, bypassCombatCheck)
   DebugPrint("ShowToast called with type: %s, name: %s", data.type or "unknown", data.name or "unknown")
   
   -- Validate required data
   if not data.type or not TOAST_TYPES[data.type] then
     DebugPrint("Invalid toast type: %s", tostring(data.type))
+    return
+  end
+  
+  -- Check if in combat (unless bypassing check) - queue all toast types during combat
+  if not bypassCombatCheck and UnitAffectingCombat and UnitAffectingCombat("player") then
+    -- Queue toast for after combat ends
+    if not pendingCombatToasts then
+      pendingCombatToasts = {}
+    end
+    table.insert(pendingCombatToasts, data)
+    DebugPrint("%s toast queued - waiting for combat to end", data.type)
     return
   end
   
@@ -69,7 +90,7 @@ function processToastQueue()
     DebugPrint("Creating new toast frame")
     toastFrame = CreateFrame("Frame", "PPT_ToastFrame", UIParent)
     toastFrame:SetSize(420, 90)
-    toastFrame:SetPoint("TOP", UIParent, "TOP", 0, -100)
+    toastFrame:SetPoint("TOP", UIParent, "TOP", 0, -120) -- Moved down 20px from -100
     toastFrame:SetFrameStrata("FULLSCREEN_DIALOG")
     toastFrame:SetFrameLevel(100)
     

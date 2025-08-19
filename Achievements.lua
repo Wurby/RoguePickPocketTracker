@@ -9,8 +9,8 @@
 ACHIEVEMENT_DATA = {
   -- Mobs pickpocketed per session: 1, 2, 5, 10, 25
   session_mobs = {
-    {id = "session_mobs_1", name = "Finger Exercises", description = "Pick pocket 1 mob in a single session", goal = 1, icon = "Interface\\Icons\\INV_Misc_Bag_10"},
-    {id = "session_mobs_2", name = "Double Trouble", description = "Pick pocket 2 mobs in a single session", goal = 2, icon = "Interface\\Icons\\INV_Misc_Bag_10"},
+    {id = "session_mobs_1", name = "Baby's first pick pocket", description = "Pick pocket 1 mob in a single session", goal = 1, icon = "Interface\\Icons\\INV_Misc_Bag_10"},
+    {id = "session_mobs_3", name = "Double Trouble", description = "Pick pocket 3 mobs in a single session", goal = 3, icon = "Interface\\Icons\\INV_Misc_Bag_10"},
     {id = "session_mobs_5", name = "Handful of Coins", description = "Pick pocket 5 mobs in a single session", goal = 5, icon = "Interface\\Icons\\INV_Misc_Bag_10"},
     {id = "session_mobs_10", name = "Master Thief", description = "Pick pocket 10 mobs in a single session", goal = 10, icon = "Interface\\Icons\\INV_Misc_Bag_10"},
     {id = "session_mobs_25", name = "Shadow Lord", description = "Pick pocket 25 mobs in a single session", goal = 25, icon = "Interface\\Icons\\INV_Misc_Bag_10"}
@@ -51,7 +51,7 @@ ACHIEVEMENT_DATA = {
   
   -- Zones pick pocketed: 1, 5, 10, 20, 30, all zones
   zones_visited = {
-    {id = "zones_1", name = "Tourist", description = "Pick pocket in 1 zone", goal = 1, icon = "Interface\\Icons\\INV_Misc_Map_01"},
+    {id = "zones_2", name = "Tourist", description = "Pick pocket in 2 zones", goal = 2, icon = "Interface\\Icons\\INV_Misc_Map_01"},
     {id = "zones_5", name = "Explorer", description = "Pick pocket in 5 zones", goal = 5, icon = "Interface\\Icons\\INV_Misc_Map_01"},
     {id = "zones_10", name = "World Traveler", description = "Pick pocket in 10 zones", goal = 10, icon = "Interface\\Icons\\INV_Misc_Map_01"},
     {id = "zones_20", name = "Globe Trotter", description = "Pick pocket in 20 zones", goal = 20, icon = "Interface\\Icons\\INV_Misc_Map_01"},

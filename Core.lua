@@ -20,6 +20,14 @@ PPT_Achievements         = type(PPT_Achievements) == "table" and PPT_Achievement
 PPT_CompletedAchievements = type(PPT_CompletedAchievements) == "table" and PPT_CompletedAchievements or {}
 PPT_AlertOpacity         = tonumber(PPT_AlertOpacity) or 80
 PPT_LastSessionData      = type(PPT_LastSessionData) == "table" and PPT_LastSessionData or nil
+-- Stopwatch/Tracking Feature Variables
+PPT_StopwatchEnabled     = (PPT_StopwatchEnabled ~= nil) and PPT_StopwatchEnabled or true
+PPT_TrackingActive       = (PPT_TrackingActive ~= nil) and PPT_TrackingActive or false
+PPT_TrackingStartTime    = tonumber(PPT_TrackingStartTime) or nil
+PPT_TrackingStartCopper  = tonumber(PPT_TrackingStartCopper) or 0
+PPT_TrackingStartItems   = tonumber(PPT_TrackingStartItems) or 0
+-- Session Display Options
+PPT_SessionDisplayEnabled = (PPT_SessionDisplayEnabled ~= nil) and PPT_SessionDisplayEnabled or true
 
 ------------------------------------------------------------
 --                    DATA MIGRATION
@@ -236,5 +244,170 @@ function getLocationStatsSummary(filterZone)
   end
   table.sort(locations, function(a, b) return a.stats.copper > b.stats.copper end)
   return locations
+end
+
+------------------------------------------------------------
+--                   STOPWATCH/TRACKING FUNCTIONS
+------------------------------------------------------------
+
+-- Start tracking pick pocket earnings
+function StartPickPocketTracking()
+  if PPT_TrackingActive then
+    DebugPrint("Tracking already active, resetting...")
+  end
+  
+  PPT_TrackingActive = true
+  PPT_TrackingStartTime = GetTime()
+  PPT_TrackingStartCopper = PPT_TotalCopper
+  PPT_TrackingStartItems = PPT_TotalItems
+  
+  DebugPrint("Pick pocket tracking started at %d copper, %d items", PPT_TrackingStartCopper, PPT_TrackingStartItems)
+  
+  -- Show start toast
+  ShowToast({
+    type = "tracking",
+    name = "Tracking Started",
+    description = "Pick pocket earnings tracking is now active",
+    icon = "Interface\\Icons\\INV_Misc_PocketWatch_01"
+  })
+  
+  -- Update the UI to reflect the new state
+  if UpdateCoinageTracker then
+    UpdateCoinageTracker()
+  end
+end
+
+-- Stop tracking pick pocket earnings
+function StopPickPocketTracking()
+  if not PPT_TrackingActive then
+    DebugPrint("Tracking not active")
+    -- Show error toast
+    ShowToast({
+      type = "tracking",
+      name = "Not Tracking",
+      description = "Pick pocket tracking is not currently active",
+      icon = "Interface\\Icons\\INV_Misc_PocketWatch_01"
+    })
+    return
+  end
+  
+  -- Calculate final stats before stopping
+  local elapsedTime = GetTime() - (PPT_TrackingStartTime or 0)
+  local earnedCopper = PPT_TotalCopper - PPT_TrackingStartCopper
+  local earnedItems = PPT_TotalItems - PPT_TrackingStartItems
+  
+  -- Calculate final rates
+  local minutes = elapsedTime / 60
+  local hours = elapsedTime / 3600
+  local copperPerMinute = minutes > 0 and (earnedCopper / minutes) or 0
+  local copperPerHour = hours > 0 and (earnedCopper / hours) or 0
+  
+  -- Now stop tracking
+  PPT_TrackingActive = false
+  
+  DebugPrint("Pick pocket tracking stopped after %.2f seconds, earned %d copper, %d items", 
+             elapsedTime, earnedCopper, earnedItems)
+  
+  -- Build comprehensive description for toast
+  local description = string.format("Time: %s | Earned: %s | %s/hr", 
+                                   FormatTrackingTime(elapsedTime),
+                                   coinsToString(earnedCopper),
+                                   coinsToString(math.floor(copperPerHour)))
+  
+  if earnedItems > 0 then
+    description = description .. string.format(" | Items: %d", earnedItems)
+  end
+  
+  -- Show final report toast
+  ShowToast({
+    type = "tracking",
+    name = "Tracking Complete",
+    description = description,
+    icon = "Interface\\Icons\\INV_Misc_PocketWatch_01"
+  })
+  
+  -- Update the UI to reflect the new state
+  if UpdateCoinageTracker then
+    UpdateCoinageTracker()
+  end
+end
+
+-- Get current tracking stats
+function GetTrackingStats()
+  if not PPT_TrackingActive or not PPT_TrackingStartTime then
+    return nil
+  end
+  
+  local elapsedTime = GetTime() - PPT_TrackingStartTime
+  local earnedCopper = PPT_TotalCopper - PPT_TrackingStartCopper
+  local earnedItems = PPT_TotalItems - PPT_TrackingStartItems
+  
+  -- Calculate per minute and per hour rates
+  local minutes = elapsedTime / 60
+  local hours = elapsedTime / 3600
+  
+  local copperPerMinute = minutes > 0 and (earnedCopper / minutes) or 0
+  local copperPerHour = hours > 0 and (earnedCopper / hours) or 0
+  local itemsPerMinute = minutes > 0 and (earnedItems / minutes) or 0
+  local itemsPerHour = hours > 0 and (earnedItems / hours) or 0
+  
+  return {
+    elapsedTime = elapsedTime,
+    earnedCopper = earnedCopper,
+    earnedItems = earnedItems,
+    copperPerMinute = copperPerMinute,
+    copperPerHour = copperPerHour,
+    itemsPerMinute = itemsPerMinute,
+    itemsPerHour = itemsPerHour
+  }
+end
+
+-- Format tracking time for display
+function FormatTrackingTime(seconds)
+    if not seconds or seconds <= 0 then return "0:00" end
+    
+    local minutes = math.floor(seconds / 60)
+    local remainingSeconds = seconds % 60
+    
+    if minutes >= 60 then
+        local hours = math.floor(minutes / 60)
+        minutes = minutes % 60
+        return string.format("%d:%02d:%02d", hours, minutes, remainingSeconds)
+    else
+        return string.format("%d:%02d", minutes, remainingSeconds)
+    end
+end
+
+-- Show a tracking report
+function ShowTrackingReport()
+  local stats = GetTrackingStats()
+  if not stats then
+    -- Show error toast
+    ShowToast({
+      type = "tracking",
+      name = "No Tracking Data",
+      description = "No tracking session is currently active",
+      icon = "Interface\\Icons\\INV_Misc_PocketWatch_01"
+    })
+    return
+  end
+  
+  -- Build comprehensive description for toast
+  local description = string.format("Time: %s | Earned: %s | %s/hr", 
+                                   FormatTrackingTime(stats.elapsedTime),
+                                   coinsToString(stats.earnedCopper),
+                                   coinsToString(math.floor(stats.copperPerHour)))
+  
+  if stats.earnedItems > 0 then
+    description = description .. string.format(" | Items: %d", stats.earnedItems)
+  end
+  
+  -- Show tracking report toast
+  ShowToast({
+    type = "tracking",
+    name = "Tracking Report",
+    description = description,
+    icon = "Interface\\Icons\\INV_Misc_PocketWatch_01"
+  })
 end
 

@@ -20,6 +20,12 @@ sessionZone = nil
 sessionLocation = nil
 sessionToastShown = false
 sessionToastShown = false  -- Track if we've shown the session toast
+sessionStartTime = nil     -- When current session started
+sessionMobCount = 0        -- Number of unique mobs pickpocketed this session
+sessionEndTime = nil       -- When session ended (for display delay)
+sessionDisplayTimer = nil  -- Timer for hiding session info
+pendingSessionToast = false -- Session ended but toast waiting for combat to end
+pendingAchievementToasts = {} -- Achievement toasts waiting for combat to end
 
 -- UI-guard helpers
 recentUI = {}
@@ -146,7 +152,7 @@ function ShowSessionToast(useStoredData)
     name = sessionSummary,
     description = description,
     icon = "Interface\\Icons\\Ability_Stealth"
-  })
+  }, true) -- bypass combat check - session toasts are managed separately
 end
 
 local function getGroupChannel()
@@ -257,6 +263,7 @@ end
 --                     SESSION LIFECYCLE
 ------------------------------------------------------------
 function resetSession()
+  DebugPrint("Session reset - sessionCopper was: %s", coinsToString(sessionCopper))
   sessionCopper = 0
   mirroredCopperThisSession = 0
   sessionHadPick = false
@@ -268,6 +275,8 @@ function resetSession()
   sessionZone = nil
   sessionLocation = nil
   sessionToastShown = false  -- Reset toast flag for new session
+  sessionStartTime = nil
+  sessionMobCount = 0
 end
 
 function startSession()
@@ -275,7 +284,59 @@ function startSession()
   resetSession()
   sessionZone = getCurrentZone()
   sessionLocation = getCurrentLocation()
+  sessionStartTime = GetTime()
   DebugPrint("Stealth: start at %s", sessionLocation)
+end
+
+-- Get current session statistics
+function GetSessionStats()
+  if not sessionActive or not sessionStartTime then
+    return nil
+  end
+  
+  local elapsedTime = GetTime() - sessionStartTime
+  return {
+    elapsedTime = elapsedTime,
+    mobCount = sessionMobCount,
+    copper = sessionCopper,
+    items = sessionItemsCount
+  }
+end
+
+-- Check if session info should be displayed in UI
+function ShouldShowSessionInfo()
+    -- Don't show if disabled in options
+    if not PPT_SessionDisplayEnabled then
+        return false
+    end
+    
+    -- Show if session is currently active
+    if sessionActive then
+        return true
+    end
+    
+    -- Show last session data if we have it
+    if PPT_LastSessionData then
+        return true
+    end
+    
+    return false
+end
+
+-- Format session time for display
+function FormatSessionTime(seconds)
+    if not seconds or seconds <= 0 then return "0:00" end
+    
+    local minutes = math.floor(seconds / 60)
+    local remainingSeconds = seconds % 60
+    
+    if minutes >= 60 then
+        local hours = math.floor(minutes / 60)
+        minutes = minutes % 60
+        return string.format("%d:%02d:%02d", hours, minutes, remainingSeconds)
+    else
+        return string.format("%d:%02d", minutes, remainingSeconds)
+    end
 end
 
 function finalizeSession(reasonIfZero)
@@ -380,7 +441,13 @@ function finalizeSession(reasonIfZero)
       
       -- Only show toast if we haven't already shown it (e.g., on combat end)
       if not sessionToastShown then
-        ShowSessionToast() -- Show toast notification instead of chat spam
+        -- Check if in combat - if so, queue the toast for later
+        if UnitAffectingCombat and UnitAffectingCombat("player") then
+          pendingSessionToast = true
+          DebugPrint("Session toast queued - waiting for combat to end")
+        else
+          ShowSessionToast() -- Show toast notification immediately
+        end
       end
       ShareSummaryAndStats(nil, summaryMsg)
       PPT_LastSummary = summaryMsg
@@ -398,7 +465,17 @@ function finalizeSession(reasonIfZero)
   sessionActive = false
   inStealth = false
   lastMoney = nil
+  
+  -- Set session end time but don't start timer - just keep info available
+  sessionEndTime = GetTime()
+  
+  -- Prevent UI jumping during session finalization
+  if PreventPositionAdjustments then
+    PreventPositionAdjustments(0.5) -- Reduced duration for better responsiveness
+  end
+  
   resetSession()
+  UpdateCoinageTracker() -- Update UI to show last session info
 end
 
 ------------------------------------------------------------
@@ -407,12 +484,22 @@ end
 function getStealthFlag() return not not IsStealthed() end
 
 function onStealthGained()
+  -- Set stealth transition flag to prevent UI jumping
+  if SetStealthTransition then
+    SetStealthTransition(true)
+  end
+  
   if sessionActive then finalizeSession("restarted") end
   inStealth = true
   startSession()
 end
 
 function onStealthLost()
+  -- Set stealth transition flag to prevent UI jumping
+  if SetStealthTransition then
+    SetStealthTransition(true)
+  end
+  
   inStealth = false
   windowEndsAt = GetTime() + WINDOW_AFTER_STEALTH_END
   DebugPrint("Stealth: end (grace %ds)", WINDOW_AFTER_STEALTH_END)
@@ -427,19 +514,24 @@ function sweepMoneyNow()
     local now = GetMoney()
     if lastMoney and now > lastMoney then
       local diff = now - lastMoney
-      DebugPrint("Money(sweep): +%s", coinsToString(diff))
-      sessionCopper = sessionCopper + diff
-      PPT_TotalCopper = PPT_TotalCopper + diff
-      UpdateCoinageTracker()
-      mirroredCopperThisSession = mirroredCopperThisSession + diff
-      lastMoney = now
-      
-      -- Update total money achievements in real-time
-      if updateTotalAchievementsOnly then
-        updateTotalAchievementsOnly()
-      elseif updateTotalAchievements then
-        updateTotalAchievements()
+      -- Additional safety: only count money if we have an active session with picks
+      if sessionActive and sessionHadPick then
+        DebugPrint("Money(sweep): +%s", coinsToString(diff))
+        sessionCopper = sessionCopper + diff
+        PPT_TotalCopper = PPT_TotalCopper + diff
+        UpdateCoinageTracker()
+        mirroredCopperThisSession = mirroredCopperThisSession + diff
+        
+        -- Update total money achievements in real-time
+        if updateTotalAchievementsOnly then
+          updateTotalAchievementsOnly()
+        elseif updateTotalAchievements then
+          updateTotalAchievements()
+        end
+      else
+        DebugPrint("Money(sweep): ignoring +%s (no active pickpocket session)", coinsToString(diff))
       end
+      lastMoney = now
     end
   end
 end

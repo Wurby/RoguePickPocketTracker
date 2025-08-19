@@ -19,21 +19,37 @@ frame:RegisterEvent("PLAYER_REGEN_DISABLED") -- Combat start
 local function SafeRegister(evt) pcall(frame.RegisterEvent, frame, evt) end
 SafeRegister("MERCHANT_SHOW"); SafeRegister("MAIL_SHOW"); SafeRegister("TAXIMAP_OPENED")
 
--- Poll (money deltas + grace timeout)
+-- Poll (money deltas + grace timeout + tracking updates)
 local pollAccum = 0
+local trackingUpdateAccum = 0
+local sessionUpdateAccum = 0
 frame:SetScript("OnUpdate", function(_, elapsed)
+  trackingUpdateAccum = trackingUpdateAccum + elapsed
+  sessionUpdateAccum = sessionUpdateAccum + elapsed
+  
+  -- Update tracking display every 0.5 seconds when tracking is active
+  if PPT_TrackingActive and trackingUpdateAccum >= 0.5 then
+    trackingUpdateAccum = 0
+    if UpdateCoinageTracker then
+      UpdateCoinageTracker()
+    end
+  end
+  
+  -- Update session display every 1 second when session is active
+  if sessionActive and sessionUpdateAccum >= 1.0 then
+    sessionUpdateAccum = 0
+    if UpdateCoinageTracker then
+      UpdateCoinageTracker()
+    end
+  end
+  
   if not sessionActive then return end
   pollAccum = pollAccum + elapsed
-  -- Only timeout if not in stealth AND not in combat AND timeout reached
+  
+  -- Session timeout after grace period - end session regardless of combat
   if (not inStealth) and windowEndsAt > 0 and GetTime() >= windowEndsAt then
-    -- Check if we're in combat - if so, delay the timeout
-    if UnitAffectingCombat and UnitAffectingCombat("player") then
-      -- Extend timeout while in combat
-      windowEndsAt = GetTime() + 1  -- Check again in 1 second
-      DebugPrint("Session timeout delayed due to combat")
-    else
-      finalizeSession("timeout")
-    end
+    -- Session timeout - finalize session (toasts will be delayed if in combat)
+    finalizeSession("timeout")
     return
   end
   if pollAccum >= POLL_INTERVAL then
@@ -70,15 +86,33 @@ frame:SetScript("OnEvent", function(_, event, ...)
         updateAllAchievements()
       end
       
+      -- Initialize UI
+      if UpdateCoinageTracker then
+        UpdateCoinageTracker()
+      end
+      
       DebugPrint(("SV @load: copper=%d attempts=%d succ=%d items=%d version=%d")
         :format(PPT_TotalCopper or -1, PPT_TotalAttempts or -1, PPT_SuccessfulAttempts or -1, PPT_TotalItems or -1, PPT_DataVersion or -1))
     end
 
   elseif event == "PLAYER_ENTERING_WORLD" then
+    DebugPrint("PLAYER_ENTERING_WORLD - initializing session state")
     playerGUID = UnitGUID("player")
     inStealth, sessionActive = false, false
+    
+    -- Reset session variables to prevent leftover data from causing incorrect totals
+    if resetSession then
+      resetSession()
+    end
+    
     lastMoney = GetMoney()
-    if getStealthFlag() then onStealthGained() end
+    DebugPrint("PLAYER_ENTERING_WORLD - lastMoney set to: %s", coinsToString(lastMoney))
+    if getStealthFlag and getStealthFlag() then onStealthGained() end
+    
+    -- Ensure UI is visible if enabled
+    if UpdateCoinageTracker then
+      UpdateCoinageTracker()
+    end
     
     -- Try to hook achievements if not already done
     if tryHookLater and not _PPT_AchievementHookInstalled then
@@ -89,8 +123,8 @@ frame:SetScript("OnEvent", function(_, event, ...)
     local unitTag, _, spellID = ...
     if unitTag == "player" and spellID == PICK_ID then
       if not sessionActive then
-        startSession()
-        if not getStealthFlag() then windowEndsAt = GetTime() + WINDOW_AFTER_STEALTH_END end
+        if startSession then startSession() end
+        if getStealthFlag and not getStealthFlag() then windowEndsAt = GetTime() + WINDOW_AFTER_STEALTH_END end
       end
       sessionHadPick = true
       DebugPrint("Pick: UNIT_SPELLCAST_SUCCEEDED")
@@ -101,19 +135,23 @@ frame:SetScript("OnEvent", function(_, event, ...)
     if not playerGUID then return end
 
     if dstGUID == playerGUID and STEALTH_IDS[spellID] then
-      if sub == "SPELL_AURA_APPLIED" then onStealthGained(); return
-      elseif sub == "SPELL_AURA_REMOVED" then onStealthLost(); return end
+      if sub == "SPELL_AURA_APPLIED" and onStealthGained then onStealthGained(); return
+      elseif sub == "SPELL_AURA_REMOVED" and onStealthLost then onStealthLost(); return end
     end
 
     if sub == "SPELL_CAST_SUCCESS" and srcGUID == playerGUID and spellID == PICK_ID then
       if not sessionActive then
-        startSession()
-        if not getStealthFlag() then windowEndsAt = GetTime() + WINDOW_AFTER_STEALTH_END end
+        if startSession then startSession() end
+        if getStealthFlag and not getStealthFlag() then windowEndsAt = GetTime() + WINDOW_AFTER_STEALTH_END end
       end
       sessionHadPick = true
       if dstGUID and not attemptedGUIDs[dstGUID] then
         attemptedGUIDs[dstGUID] = true
         PPT_TotalAttempts = PPT_TotalAttempts + 1
+        
+        -- Increment session mob count for unique targets
+        sessionMobCount = sessionMobCount + 1
+        DebugPrint("Pick: session mob count now %d", sessionMobCount)
         
         -- Record location-based attempt immediately using CURRENT location (not session location)
         local currentZone = getCurrentZone()
@@ -164,6 +202,9 @@ frame:SetScript("OnEvent", function(_, event, ...)
         mirroredCopperThisSession = mirroredCopperThisSession + diff
       end
       lastMoney = now
+    else
+      -- Always update lastMoney even if not tracking to prevent false positives
+      lastMoney = GetMoney()
     end
 
   elseif event == "PLAYER_LOGOUT" then
@@ -175,11 +216,29 @@ frame:SetScript("OnEvent", function(_, event, ...)
       :format(PPT_TotalCopper or -1, PPT_TotalAttempts or -1, PPT_SuccessfulAttempts or -1, PPT_TotalItems or -1))
       
   elseif event == "PLAYER_REGEN_ENABLED" then
-    -- Combat ended - show session toast if we have session data and stealth ended
-    if sessionActive and sessionHadPick and (not inStealth) and windowEndsAt > 0 and (sessionCopper > 0 or sessionItemsCount > 0) and not sessionToastShown then
-      DebugPrint("Combat ended with pending session, showing session toast")
-      ShowSessionToast()
-      sessionToastShown = true  -- Mark that we've shown the toast
+    -- Combat ended - show any pending toasts
+    if pendingSessionToast then
+      DebugPrint("Combat ended - showing pending session toast")
+      ShowToast({
+        type = "session",
+        name = PPT_LastSessionData and string.format("Session: %s | %d items", 
+                                                     coinsToString(PPT_LastSessionData.copper),
+                                                     PPT_LastSessionData.itemsCount) or "Session Complete",
+        description = PPT_LastSessionData and "Stealth session has ended" or "",
+        icon = "Interface\\Icons\\Ability_Stealth"
+      }, true) -- bypass combat check
+      pendingSessionToast = false
+      sessionToastShown = true
+    end
+    
+    -- Show any pending toasts that were queued during combat
+    if pendingCombatToasts and #pendingCombatToasts > 0 then
+      for _, toastData in ipairs(pendingCombatToasts) do
+        DebugPrint("Combat ended - showing pending %s toast", toastData.type or "unknown")
+        -- Show the toast using normal ShowToast function
+        ShowToast(toastData, true) -- bypass combat check since we're already out of combat
+      end
+      pendingCombatToasts = {}
     end
     
   elseif event == "PLAYER_REGEN_DISABLED" then
@@ -415,6 +474,23 @@ SlashCmdList["PICKPOCKET"] = function(msg)
       updateAllAchievements()
     end
     return
+  elseif cmd == "moneycheck" then
+    -- Diagnostic command to check money tracking state
+    PPTPrint("=== Money Tracking Diagnostics ===")
+    PPTPrint("Current Money: %s", coinsToString(GetMoney()))
+    PPTPrint("Last Money: %s", lastMoney and coinsToString(lastMoney) or "nil")
+    PPTPrint("Session Active: %s", tostring(sessionActive))
+    PPTPrint("Session Had Pick: %s", tostring(sessionHadPick))
+    PPTPrint("Session Copper: %s", coinsToString(sessionCopper))
+    PPTPrint("Mirrored This Session: %s", coinsToString(mirroredCopperThisSession))
+    PPTPrint("Total Copper: %s", coinsToString(PPT_TotalCopper))
+    if lastMoney and GetMoney() > lastMoney then
+      PPTPrint("Untracked Money Difference: %s", coinsToString(GetMoney() - lastMoney))
+    end
+    PPTPrint("In Stealth: %s", tostring(inStealth))
+    PPTPrint("UI Recently Opened: %s", tostring(uiRecentlyOpened()))
+    PPTPrint("===============================")
+    return
   elseif cmd == "version" then
     PPTPrint("Data version:", PPT_DataVersion or 0)
     PPTPrint("Current version:", 2)  -- Update this when CURRENT_DATA_VERSION changes
@@ -522,6 +598,60 @@ SlashCmdList["PICKPOCKET"] = function(msg)
       PPTPrint("Options window not available yet. Try again after addon finishes loading.")
     end
     return
+  elseif cmd == "track" or cmd == "tracking" then
+    -- Tracking commands
+    if arg1 == "start" then
+      if not PPT_StopwatchEnabled then
+        ShowToast({
+          type = "tracking",
+          name = "Feature Disabled",
+          description = "Enable tracking in options first",
+          icon = "Interface\\Icons\\INV_Misc_PocketWatch_01"
+        })
+        return
+      end
+      StartPickPocketTracking()
+    elseif arg1 == "stop" then
+      StopPickPocketTracking()
+    elseif arg1 == "toggle" then
+      TogglePickPocketTracking()
+    elseif arg1 == "status" or arg1 == "info" then
+      if PPT_TrackingActive then
+        local stats = GetTrackingStats()
+        if stats then
+          PPTPrint("----- Tracking Status -----")
+          PPTPrint("Status: Active")
+          PPTPrint("Time tracked:", FormatTrackingTime(stats.elapsedTime))
+          PPTPrint("Earned:", coinsToString(stats.earnedCopper))
+          PPTPrint("Items:", tostring(stats.earnedItems))
+          PPTPrint("Per minute:", coinsToString(math.floor(stats.copperPerMinute)))
+          PPTPrint("Per hour:", coinsToString(math.floor(stats.copperPerHour)))
+        end
+      else
+        PPTPrint("Tracking Status: Inactive")
+      end
+    elseif arg1 == "report" then
+      ShowTrackingReport()
+    elseif arg1 == "reset" then
+      if PPT_TrackingActive then
+        PPTPrint("Resetting tracking...")
+        StartPickPocketTracking() -- This automatically resets
+      else
+        PPTPrint("Tracking is not active. Use '/pp track start' to begin.")
+      end
+    else
+      PPTPrint("Tracking commands:")
+      PPTPrint("  /pp track start - Start tracking earnings")
+      PPTPrint("  /pp track stop - Stop tracking earnings")
+      PPTPrint("  /pp track toggle - Toggle tracking")
+      PPTPrint("  /pp track status - Show tracking status")
+      PPTPrint("  /pp track report - Show tracking report")
+      PPTPrint("  /pp track reset - Reset current tracking session")
+      if not PPT_StopwatchEnabled then
+        PPTPrint("Note: Tracking is currently disabled. Enable in /pp options")
+      end
+    end
+    return
   elseif cmd == "help" then
     PPTPrint("----- Help -----")
     PPTPrint("Usage: /pp [togglemsg, toggletoasts, share, auto share, reset, debug, items, options, achievements, help, version]")
@@ -534,6 +664,10 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPTPrint("UI commands:")
     PPTPrint("  /pp tracker - Toggle coinage tracker")
     PPTPrint("  /pp ui coinage [show/hide/toggle/reset] - Manage coinage tracker")
+    PPTPrint("Tracking commands:")
+    PPTPrint("  /pp track start/stop/toggle - Control earnings tracking")
+    PPTPrint("  /pp track status - Show current tracking status")
+    PPTPrint("  /pp track report - Show detailed tracking report")
     PPTPrint("Other commands:")
     PPTPrint("  /pp togglemsg - Toggle loot messages")
     PPTPrint("  /pp toggletoasts - Toggle session completion toasts")
@@ -543,6 +677,7 @@ SlashCmdList["PICKPOCKET"] = function(msg)
     PPTPrint("  /pp auto share - Toggle automatic sharing")
     PPTPrint("  /pp reset [type] - Reset statistics (achievements/coins/locations/all)")
     PPTPrint("  /pp debug - Toggle debug mode")
+    PPTPrint("  /pp moneycheck - Check money tracking state (for debugging)")
     PPTPrint("  /pp version - Show data version info")
     PPTPrint("  /pp items - Show cumulative item counts")
     PPTPrint("  /pp session [toast/print] - Show last session summary")

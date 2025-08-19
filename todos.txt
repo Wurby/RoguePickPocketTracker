@@ -11,3 +11,5 @@
 - future creature achievements.
 - donation tab.
 - more verbose sharing.
+- money/items earned per minute/hour.
+- ✅ money/items earned per minute/hour. (COMPLETED - stopwatch/tracking feature with per-minute and per-hour rates)
