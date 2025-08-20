@@ -5,7 +5,7 @@
 --                     GLOBAL STATE (SV)
 ------------------------------------------------------------
 PPT_ShowMsg              = (PPT_ShowMsg ~= nil) and PPT_ShowMsg or true
-PPT_Debug                = PPT_Debug or false
+PPT_Debug                = PPT_Debug or false  -- Disable debug by default
 PPT_ShareGroup           = (PPT_ShareGroup ~= nil) and PPT_ShareGroup or false
 PPT_ShowSessionToasts    = (PPT_ShowSessionToasts ~= nil) and PPT_ShowSessionToasts or true
 PPT_TotalCopper          = tonumber(PPT_TotalCopper) or 0
@@ -32,7 +32,7 @@ PPT_SessionDisplayEnabled = (PPT_SessionDisplayEnabled ~= nil) and PPT_SessionDi
 ------------------------------------------------------------
 --                    DATA MIGRATION
 ------------------------------------------------------------
-local CURRENT_DATA_VERSION = 3  -- Increment this when introducing breaking changes
+local CURRENT_DATA_VERSION = 4  -- Increment this when introducing breaking changes
 
 function shouldResetData(savedVersion)
   -- Add version numbers here that require full data reset
@@ -40,6 +40,7 @@ function shouldResetData(savedVersion)
     1, -- Location-based analytics introduction
     -- 2, -- Achievement system introduction (non-breaking)
     3, -- Breaking change for release versioning
+    4,
   }
   
   for _, breakingVersion in ipairs(breakingVersions) do
@@ -275,6 +276,11 @@ function StartPickPocketTracking()
   if UpdateCoinageTracker then
     UpdateCoinageTracker()
   end
+  
+  -- Force UI to resize properly
+  if ForceUIResize then
+    ForceUIResize()
+  end
 end
 
 -- Stop tracking pick pocket earnings
@@ -329,6 +335,11 @@ function StopPickPocketTracking()
   -- Update the UI to reflect the new state
   if UpdateCoinageTracker then
     UpdateCoinageTracker()
+  end
+  
+  -- Force UI to resize properly
+  if ForceUIResize then
+    ForceUIResize()
   end
 end
 

@@ -141,6 +141,12 @@ end
 local function CalculateAndApplyContentSize()
   if not coinageFrame or not anchorFrame then return end
   
+  -- Force text refresh to ensure width calculations are accurate
+  if coinageFrame.trackingInfo then coinageFrame.trackingInfo:SetText(coinageFrame.trackingInfo:GetText() or "") end
+  if coinageFrame.timerDisplay then coinageFrame.timerDisplay:SetText(coinageFrame.timerDisplay:GetText() or "") end
+  if coinageFrame.sessionInfo then coinageFrame.sessionInfo:SetText(coinageFrame.sessionInfo:GetText() or "") end
+  if coinageFrame.controlsHeader then coinageFrame.controlsHeader:SetText(coinageFrame.controlsHeader:GetText() or "") end
+  
   local padding = 8
   local lineHeight = 14
   local buttonHeight = 20
@@ -151,41 +157,61 @@ local function CalculateAndApplyContentSize()
   local titleWidth = coinageFrame.title:GetStringWidth()
   local maxContentWidth = math.max(textWidth, titleWidth)
   
+  -- Ensure minimum width for basic content
+  maxContentWidth = math.max(maxContentWidth, 80)
+  
   -- Check visible elements and ensure they have valid width
   if coinageFrame.trackingInfo and coinageFrame.trackingInfo:IsVisible() then
-    local trackingWidth = coinageFrame.trackingInfo:GetStringWidth()
-    if trackingWidth > 0 then
-      maxContentWidth = math.max(maxContentWidth, trackingWidth)
+    local trackingText = coinageFrame.trackingInfo:GetText()
+    if trackingText and trackingText ~= "" then
+      local trackingWidth = coinageFrame.trackingInfo:GetStringWidth()
+      if trackingWidth > 0 then
+        maxContentWidth = math.max(maxContentWidth, trackingWidth)
+      end
     end
   end
   if coinageFrame.timerDisplay and coinageFrame.timerDisplay:IsVisible() then
-    local timerWidth = coinageFrame.timerDisplay:GetStringWidth()
-    if timerWidth > 0 then
-      maxContentWidth = math.max(maxContentWidth, timerWidth)
+    local timerText = coinageFrame.timerDisplay:GetText()
+    if timerText and timerText ~= "" then
+      local timerWidth = coinageFrame.timerDisplay:GetStringWidth()
+      if timerWidth > 0 then
+        maxContentWidth = math.max(maxContentWidth, timerWidth)
+      end
     end
   end
   if coinageFrame.sessionInfo and coinageFrame.sessionInfo:IsVisible() then
-    local sessionWidth = coinageFrame.sessionInfo:GetStringWidth()
-    if sessionWidth > 0 then
-      maxContentWidth = math.max(maxContentWidth, sessionWidth)
+    local sessionText = coinageFrame.sessionInfo:GetText()
+    if sessionText and sessionText ~= "" then
+      local sessionWidth = coinageFrame.sessionInfo:GetStringWidth()
+      if sessionWidth > 0 then
+        maxContentWidth = math.max(maxContentWidth, sessionWidth)
+      end
     end
   end
   if coinageFrame.controlsHeader and coinageFrame.controlsHeader:IsVisible() then
-    local headerWidth = coinageFrame.controlsHeader:GetStringWidth()
-    if headerWidth > 0 then
-      maxContentWidth = math.max(maxContentWidth, headerWidth)
+    local headerText = coinageFrame.controlsHeader:GetText()
+    if headerText and headerText ~= "" then
+      local headerWidth = coinageFrame.controlsHeader:GetStringWidth()
+      if headerWidth > 0 then
+        maxContentWidth = math.max(maxContentWidth, headerWidth)
+      end
     end
   end
   
   -- Account for buttons (50 + 5 gap + 50 = 105 pixels) - only if they're actually visible
   if PPT_StopwatchEnabled and coinageFrame.startBtn and coinageFrame.startBtn:IsVisible() then
     maxContentWidth = math.max(maxContentWidth, 105)
+    DebugPrint("UI: Including button width (105px) in calculation")
+  else
+    DebugPrint("UI: Buttons not visible, excluding from width calculation")
   end
+  
+  DebugPrint("UI: Max content width calculated: %.1f", maxContentWidth)
   
   local newWidth = maxContentWidth + (padding * 2)
   
   -- Calculate height
-  local contentHeight = lineHeight + lineHeight -- title + coinage
+  local contentHeight = lineHeight + lineHeight -- title + coinage (minimum content)
   
   if coinageFrame.trackingInfo and coinageFrame.trackingInfo:IsVisible() then
     contentHeight = contentHeight + lineHeight
@@ -200,18 +226,34 @@ local function CalculateAndApplyContentSize()
     contentHeight = contentHeight + headerHeight + buttonHeight + 4
   end
   
+  -- Ensure minimum height
+  contentHeight = math.max(contentHeight, lineHeight * 2)
+  
   local newHeight = contentHeight + (padding * 2)
   
   -- Store current size to prevent unnecessary repositioning
   local currentWidth, currentHeight = coinageFrame:GetSize()
   
+  -- Debug output for size changes
+  DebugPrint("UI: Size calculation - Current: %.1fx%.1f, New: %.1fx%.1f", 
+            currentWidth, currentHeight, newWidth, newHeight)
+  DebugPrint("UI: Visible elements - tracking:%s, timer:%s, session:%s, controls:%s, buttons:%s", 
+            coinageFrame.trackingInfo and coinageFrame.trackingInfo:IsVisible() and "Y" or "N",
+            coinageFrame.timerDisplay and coinageFrame.timerDisplay:IsVisible() and "Y" or "N", 
+            coinageFrame.sessionInfo and coinageFrame.sessionInfo:IsVisible() and "Y" or "N",
+            coinageFrame.controlsHeader and coinageFrame.controlsHeader:IsVisible() and "Y" or "N",
+            coinageFrame.startBtn and coinageFrame.startBtn:IsVisible() and "Y" or "N")
+  
   -- Only update size and position if they actually changed
   if math.abs(currentWidth - newWidth) > 1 or math.abs(currentHeight - newHeight) > 1 then
+    DebugPrint("UI: Resizing frame from %.1fx%.1f to %.1fx%.1f", currentWidth, currentHeight, newWidth, newHeight)
     -- Set size first
     coinageFrame:SetSize(newWidth, newHeight)
     
     -- Then position relative to anchor
     PositionFrameFromAnchor()
+  else
+    DebugPrint("UI: No size change needed")
   end
 end
 
@@ -380,6 +422,37 @@ local function CreateCoinageTracker()
   return coinageFrame
 end
 
+-- Force UI resize after tracking state changes
+function ForceUIResize()
+  if not coinageFrame or not coinageFrame:IsVisible() then 
+    DebugPrint("UI: ForceUIResize - frame not available or visible")
+    return 
+  end
+  
+  DebugPrint("UI: Forcing UI resize")
+  
+  -- Multiple attempts to ensure proper sizing
+  local function AttemptResize()
+    DebugPrint("UI: Attempting resize calculation")
+    CalculateAndApplyContentSize()
+  end
+  
+  -- Immediate resize
+  AttemptResize()
+  
+  -- Resize on next frame
+  C_Timer.After(0.01, function()
+    DebugPrint("UI: Delayed resize (0.01s)")
+    AttemptResize()
+  end)
+  
+  -- Additional resize to be sure
+  C_Timer.After(0.1, function()
+    DebugPrint("UI: Final resize (0.1s)")
+    AttemptResize()
+  end)
+end
+
 -- Update the coinage display
 local function UpdateCoinageDisplay()
   if not coinageFrame or not coinageFrame:IsVisible() then return end
@@ -476,7 +549,7 @@ local function UpdateCoinageDisplay()
         coinageFrame.stopBtn:SetAlpha(0.5)
       end
       
-      -- Show controls during tracking or if tracking is enabled
+      -- Always show controls when stopwatch is enabled
       coinageFrame.controlsHeader:Show()
       coinageFrame.startBtn:Show()
       coinageFrame.stopBtn:Show()
@@ -491,8 +564,8 @@ local function UpdateCoinageDisplay()
   -- Apply dynamic sizing and positioning
   CalculateAndApplyContentSize()
   
-  -- Force a secondary size update on the next frame to ensure all visibility changes are processed
-  C_Timer.After(0.01, function()
+  -- Force a more reliable resize after all visibility changes complete
+  C_Timer.After(0.1, function()
     if coinageFrame and coinageFrame:IsVisible() then
       CalculateAndApplyContentSize()
     end

@@ -212,12 +212,20 @@ function processToastQueue()
   
   -- Apply current opacity setting
   local opacity = (PPT_AlertOpacity or 80) / 100
+  -- Ensure opacity is valid
+  if opacity <= 0 or opacity > 1 then
+    opacity = 0.8  -- Default to 80%
+  end
   
-  DebugPrint("Toast data set, showing frame with opacity: %d%%", PPT_AlertOpacity or 80)
+  DebugPrint("Toast data set, showing frame with opacity: %d%%", (opacity * 100))
   
   -- Show with simple fade animation
   toastFrame:Show()
   toastFrame:SetAlpha(0)
+  
+  -- Ensure frame is properly positioned and visible
+  toastFrame:SetFrameStrata("FULLSCREEN_DIALOG")
+  toastFrame:SetFrameLevel(200)  -- Very high level to ensure visibility
   
   -- Simple timer-based fade in/out instead of animation groups
   local fadeStep = 0
