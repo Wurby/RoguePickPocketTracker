@@ -151,19 +151,34 @@ local function CalculateAndApplyContentSize()
   local titleWidth = coinageFrame.title:GetStringWidth()
   local maxContentWidth = math.max(textWidth, titleWidth)
   
-  -- Check visible elements
+  -- Check visible elements and ensure they have valid width
   if coinageFrame.trackingInfo and coinageFrame.trackingInfo:IsVisible() then
-    maxContentWidth = math.max(maxContentWidth, coinageFrame.trackingInfo:GetStringWidth())
+    local trackingWidth = coinageFrame.trackingInfo:GetStringWidth()
+    if trackingWidth > 0 then
+      maxContentWidth = math.max(maxContentWidth, trackingWidth)
+    end
   end
   if coinageFrame.timerDisplay and coinageFrame.timerDisplay:IsVisible() then
-    maxContentWidth = math.max(maxContentWidth, coinageFrame.timerDisplay:GetStringWidth())
+    local timerWidth = coinageFrame.timerDisplay:GetStringWidth()
+    if timerWidth > 0 then
+      maxContentWidth = math.max(maxContentWidth, timerWidth)
+    end
   end
   if coinageFrame.sessionInfo and coinageFrame.sessionInfo:IsVisible() then
-    maxContentWidth = math.max(maxContentWidth, coinageFrame.sessionInfo:GetStringWidth())
+    local sessionWidth = coinageFrame.sessionInfo:GetStringWidth()
+    if sessionWidth > 0 then
+      maxContentWidth = math.max(maxContentWidth, sessionWidth)
+    end
+  end
+  if coinageFrame.controlsHeader and coinageFrame.controlsHeader:IsVisible() then
+    local headerWidth = coinageFrame.controlsHeader:GetStringWidth()
+    if headerWidth > 0 then
+      maxContentWidth = math.max(maxContentWidth, headerWidth)
+    end
   end
   
-  -- Account for buttons (50 + 5 gap + 50 = 105 pixels)
-  if PPT_StopwatchEnabled then
+  -- Account for buttons (50 + 5 gap + 50 = 105 pixels) - only if they're actually visible
+  if PPT_StopwatchEnabled and coinageFrame.startBtn and coinageFrame.startBtn:IsVisible() then
     maxContentWidth = math.max(maxContentWidth, 105)
   end
   
@@ -181,7 +196,7 @@ local function CalculateAndApplyContentSize()
   if coinageFrame.sessionInfo and coinageFrame.sessionInfo:IsVisible() then
     contentHeight = contentHeight + lineHeight
   end
-  if PPT_StopwatchEnabled and coinageFrame.controlsHeader and coinageFrame.controlsHeader:IsVisible() then
+  if coinageFrame.controlsHeader and coinageFrame.controlsHeader:IsVisible() then
     contentHeight = contentHeight + headerHeight + buttonHeight + 4
   end
   
@@ -475,6 +490,13 @@ local function UpdateCoinageDisplay()
   
   -- Apply dynamic sizing and positioning
   CalculateAndApplyContentSize()
+  
+  -- Force a secondary size update on the next frame to ensure all visibility changes are processed
+  C_Timer.After(0.01, function()
+    if coinageFrame and coinageFrame:IsVisible() then
+      CalculateAndApplyContentSize()
+    end
+  end)
 end
 
 -- Apply settings to the frame

@@ -27,3 +27,6 @@ Thumbs.db
 
 # Package outputs
 RoguePickPocketTracker-*/
+
+# copilot instructions
+.github/instructions/*
