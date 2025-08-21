@@ -102,16 +102,16 @@ if [[ $IS_MAJOR_BUMP == true ]]; then
     echo ""
     echo "🔄 Major version detected - checking data version..."
     
-    # Get current data version from Core.lua
-    CORE_FILE="Core.lua"
+    # Get current data version from Core/Core.lua
+    CORE_FILE="Core/Core.lua"
     if [[ ! -f "$CORE_FILE" ]]; then
-        echo "❌ Error: Core.lua not found in current directory"
+        echo "❌ Error: Core/Core.lua not found in current directory"
         exit 1
     fi
     
     CURRENT_DATA_VERSION=$(grep -o 'CURRENT_DATA_VERSION = [0-9]\+' "$CORE_FILE" | grep -o '[0-9]\+')
     if [[ -z "$CURRENT_DATA_VERSION" ]]; then
-        echo "❌ Error: Could not find CURRENT_DATA_VERSION in Core.lua"
+        echo "❌ Error: Could not find CURRENT_DATA_VERSION in Core/Core.lua"
         exit 1
     fi
     
@@ -128,8 +128,8 @@ if [[ $IS_MAJOR_BUMP == true ]]; then
     echo
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        # Update the data version in Core.lua
-        echo "📝 Updating CURRENT_DATA_VERSION in Core.lua..."
+        # Update the data version in Core/Core.lua
+        echo "📝 Updating CURRENT_DATA_VERSION in Core/Core.lua..."
         
         # Use sed to replace the data version line
         if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -169,9 +169,9 @@ if [[ $IS_MAJOR_BUMP == true ]]; then
             
             # Stage the change for git
             git add "$CORE_FILE"
-            echo "📦 Staged Core.lua for commit"
+            echo "📦 Staged Core/Core.lua for commit"
         else
-            echo "❌ Error: Failed to update data version or breakingVersions in Core.lua"
+            echo "❌ Error: Failed to update data version or breakingVersions in Core/Core.lua"
             echo "   Data version check: expected $NEW_DATA_VERSION, got $NEW_VERSION_CHECK"
             echo "   Breaking version check: found $BREAKING_VERSION_CHECK entries"
             exit 1
@@ -244,8 +244,8 @@ fi
 
 # Commit data version change if it was made
 if [[ $IS_MAJOR_BUMP == true ]] && [[ -n "$NEW_DATA_VERSION" ]]; then
-    # Check if Core.lua was actually staged (meaning data version was updated)
-    if git diff --staged --name-only | grep -q "Core.lua"; then
+    # Check if Core/Core.lua was actually staged (meaning data version was updated)
+    if git diff --staged --name-only | grep -q "Core/Core.lua"; then
         echo "💾 Committing data version bump..."
         git commit -m "Bump data version to $NEW_DATA_VERSION for v$NEW_VERSION
 
