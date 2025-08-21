@@ -8,51 +8,81 @@
 -- Define styles for different toast types
 ToastStyles = {
   achievement = {
-    backgroundColor = {0, 0, 0, 0.95}, -- Pure black background
-    borderColor = {0.8, 0.6, 0.2, 1}, -- Gold border
-    titleColor = {1, 0.84, 0}, -- Gold title
-    textColor = {1, 1, 1}, -- White text
-    descColor = {0.8, 0.8, 0.8}, -- Light grey description
+    backgroundColor = function(opacity) 
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0, 0, 0, opacity}
+    end,
+    borderColor = function(opacity)
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0.8, 0.6, 0.2, opacity}
+    end,
+    titleColor = {1, 0.84, 0}, -- Gold title (full opacity)
+    textColor = {1, 1, 1}, -- White text (full opacity)
+    descColor = {0.8, 0.8, 0.8}, -- Light grey description (full opacity)
     defaultTitle = "Achievement Unlocked!",
     defaultIcon = "Interface\\Icons\\INV_Misc_QuestionMark"
   },
   
   session = {
-    backgroundColor = {0, 0, 0, 0.95}, -- Pure black background
-    borderColor = {0.3, 0.6, 1, 1}, -- Blue border (stealth theme)
-    titleColor = {0.4, 0.7, 1}, -- Light blue title
-    textColor = {1, 1, 1}, -- White text
-    descColor = {0.8, 0.8, 0.8}, -- Light grey description
+    backgroundColor = function(opacity) 
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0, 0, 0, opacity}
+    end,
+    borderColor = function(opacity)
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0.3, 0.6, 1, opacity}
+    end,
+    titleColor = {0.4, 0.7, 1}, -- Light blue title (full opacity)
+    textColor = {1, 1, 1}, -- White text (full opacity)
+    descColor = {0.8, 0.8, 0.8}, -- Light grey description (full opacity)
     defaultTitle = "Stealth Session Complete!",
     defaultIcon = "Interface\\Icons\\Ability_Stealth"
   },
   
   tracking = {
-    backgroundColor = {0, 0, 0, 0.95}, -- Pure black background
-    borderColor = {0.6, 0.4, 0.8, 1}, -- Purple border
-    titleColor = {0.7, 0.5, 1}, -- Light purple title
-    textColor = {1, 1, 1}, -- White text
-    descColor = {0.8, 0.8, 0.8}, -- Light grey description
+    backgroundColor = function(opacity) 
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0, 0, 0, opacity}
+    end,
+    borderColor = function(opacity)
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0.6, 0.4, 0.8, opacity}
+    end,
+    titleColor = {0.7, 0.5, 1}, -- Light purple title (full opacity)
+    textColor = {1, 1, 1}, -- White text (full opacity)
+    descColor = {0.8, 0.8, 0.8}, -- Light grey description (full opacity)
     defaultTitle = "Tracking Report",
     defaultIcon = "Interface\\Icons\\INV_Misc_PocketWatch_01"
   },
   
   error = {
-    backgroundColor = {0, 0, 0, 0.95}, -- Pure black background
-    borderColor = {0.8, 0.2, 0.2, 1}, -- Red border
-    titleColor = {1, 0.4, 0.4}, -- Light red title
-    textColor = {1, 1, 1}, -- White text
-    descColor = {0.8, 0.8, 0.8}, -- Light grey description
+    backgroundColor = function(opacity) 
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0, 0, 0, opacity}
+    end,
+    borderColor = function(opacity)
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0.8, 0.2, 0.2, opacity}
+    end,
+    titleColor = {1, 0.4, 0.4}, -- Light red title (full opacity)
+    textColor = {1, 1, 1}, -- White text (full opacity)
+    descColor = {0.8, 0.8, 0.8}, -- Light grey description (full opacity)
     defaultTitle = "Error",
     defaultIcon = "Interface\\Icons\\INV_Misc_QuestionMark"
   },
   
   info = {
-    backgroundColor = {0, 0, 0, 0.95}, -- Pure black background
-    borderColor = {0.5, 0.7, 0.9, 1}, -- Light blue border
-    titleColor = {0.7, 0.9, 1}, -- Light blue title
-    textColor = {1, 1, 1}, -- White text
-    descColor = {0.8, 0.8, 0.8}, -- Light grey description
+    backgroundColor = function(opacity) 
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0, 0, 0, opacity}
+    end,
+    borderColor = function(opacity)
+      opacity = opacity or ((PPT_BackgroundOpacity or 85) / 100)
+      return {0.5, 0.7, 0.9, opacity}
+    end,
+    titleColor = {0.7, 0.9, 1}, -- Light blue title (full opacity)
+    textColor = {1, 1, 1}, -- White text (full opacity)
+    descColor = {0.8, 0.8, 0.8}, -- Light grey description (full opacity)
     defaultTitle = "Information",
     defaultIcon = "Interface\\Icons\\INV_Misc_Note_01"
   }

@@ -103,7 +103,7 @@ local function RepositionToasts()
       visibleCount = visibleCount + 1
       frame:ClearAllPoints()
       -- Position toasts at top-center of screen
-      frame:SetPoint("TOP", UIParent, "TOP", 0, -50 - yOffset)
+      frame:SetPoint("TOP", UIParent, "TOP", 0, -150 - yOffset)
       DebugPrint("Positioned toast frame %d at TOP, UIParent, TOP, 0, %d", i, -50 - yOffset)
       yOffset = yOffset + 100 -- Stack toasts vertically
     end
@@ -163,14 +163,32 @@ function ToastCore:ApplyStyle()
   end
   
   DebugPrint("Applying style to frame")
-  DebugPrint("Background color: " .. table.concat(self.style.backgroundColor, ", "))
-  DebugPrint("Border color: " .. table.concat(self.style.borderColor, ", "))
+  
+  -- Calculate opacity once to ensure consistency
+  local opacity = (PPT_BackgroundOpacity or 85) / 100
+  
+  -- Get colors (can be functions or tables) - pass opacity to avoid recalculation
+  local bgColor, borderColor
+  if type(self.style.backgroundColor) == "function" then
+    bgColor = self.style.backgroundColor(opacity)
+  else
+    bgColor = self.style.backgroundColor
+  end
+  
+  if type(self.style.borderColor) == "function" then
+    borderColor = self.style.borderColor(opacity)
+  else
+    borderColor = self.style.borderColor
+  end
+  
+  DebugPrint("Background color: " .. table.concat(bgColor, ", "))
+  DebugPrint("Border color: " .. table.concat(borderColor, ", "))
   
   -- Apply colors
-  self.frame.bg:SetColorTexture(unpack(self.style.backgroundColor))
-  self.frame.border:SetColorTexture(unpack(self.style.borderColor))
+  self.frame.bg:SetColorTexture(unpack(bgColor))
+  self.frame.border:SetColorTexture(unpack(borderColor))
   
-  -- Apply text colors
+  -- Apply text colors (always tables, full opacity)
   self.frame.title:SetTextColor(unpack(self.style.titleColor))
   self.frame.name:SetTextColor(unpack(self.style.textColor))
   self.frame.desc:SetTextColor(unpack(self.style.descColor))

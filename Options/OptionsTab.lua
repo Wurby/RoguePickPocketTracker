@@ -144,9 +144,35 @@ function CreateOptionsTab(standaloneFrame, content)
     getglobal(self:GetName() .. 'Text'):SetText(string.format("%.1f", value))
   end)
   
+  -- Background Opacity section
+  standaloneFrame.backgroundOpacityLabel = standaloneFrame.optionsContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+  standaloneFrame.backgroundOpacityLabel:SetPoint("TOPLEFT", standaloneFrame.alertOpacitySlider, "BOTTOMLEFT", -10, -25)
+  standaloneFrame.backgroundOpacityLabel:SetText("Background/Border Opacity:")
+  
+  standaloneFrame.backgroundOpacitySlider = CreateFrame("Slider", "PPT_StandaloneBackgroundOpacitySlider", standaloneFrame.optionsContent, "OptionsSliderTemplate")
+  standaloneFrame.backgroundOpacitySlider:SetPoint("TOPLEFT", standaloneFrame.backgroundOpacityLabel, "BOTTOMLEFT", 10, -10)
+  standaloneFrame.backgroundOpacitySlider:SetMinMaxValues(10, 100)
+  standaloneFrame.backgroundOpacitySlider:SetValue(PPT_BackgroundOpacity or 85)
+  standaloneFrame.backgroundOpacitySlider:SetValueStep(5)
+  standaloneFrame.backgroundOpacitySlider:SetWidth(200)
+  getglobal(standaloneFrame.backgroundOpacitySlider:GetName() .. 'Low'):SetText('10%')
+  getglobal(standaloneFrame.backgroundOpacitySlider:GetName() .. 'High'):SetText('100%')
+  getglobal(standaloneFrame.backgroundOpacitySlider:GetName() .. 'Text'):SetText(string.format("%.0f%%", PPT_BackgroundOpacity or 85))
+  standaloneFrame.backgroundOpacitySlider:SetScript("OnValueChanged", function(self, value)
+    PPT_BackgroundOpacity = value
+    getglobal(self:GetName() .. 'Text'):SetText(string.format("%.0f%%", value))
+    -- Update UI tracker if it exists
+    if UpdateCoinageBorderColor then
+      UpdateCoinageBorderColor()
+    end
+    if ApplyCoinageSettings then 
+      ApplyCoinageSettings()
+    end
+  end)
+  
   -- Background color section
   local bgColorHeader = standaloneFrame.optionsContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-  bgColorHeader:SetPoint("TOPLEFT", standaloneFrame.alertOpacitySlider, "BOTTOMLEFT", -10, -25)
+  bgColorHeader:SetPoint("TOPLEFT", standaloneFrame.backgroundOpacitySlider, "BOTTOMLEFT", -10, -25)
   bgColorHeader:SetText("Tracker Background Color:")
   bgColorHeader:SetTextColor(1, 0.82, 0)
   
@@ -287,6 +313,10 @@ function UpdateOptionsTabData(standaloneFrame)
   standaloneFrame.sessionDisplayEnabled:SetChecked(PPT_SessionDisplayEnabled)
   if standaloneFrame.alertOpacitySlider then
     standaloneFrame.alertOpacitySlider:SetValue(PPT_AlertOpacity or 1.0)
+  end
+  if standaloneFrame.backgroundOpacitySlider then
+    standaloneFrame.backgroundOpacitySlider:SetValue(PPT_BackgroundOpacity or 85)
+    getglobal(standaloneFrame.backgroundOpacitySlider:GetName() .. 'Text'):SetText(string.format("%.0f%%", PPT_BackgroundOpacity or 85))
   end
   if standaloneFrame.anchorDropdown then
     UIDropDownMenu_SetText(standaloneFrame.anchorDropdown, PPT_UI_Settings.coinageTracker.anchorPoint or "CENTER")

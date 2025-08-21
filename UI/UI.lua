@@ -18,7 +18,6 @@ PPT_UI_Settings = PPT_UI_Settings or {
     top = 100,
     scale = 1.0,
     alpha = 1.0,
-    backgroundColor = {0, 0, 0, 0.95}, -- Pure black background to match toasts
     showBackground = true,
     fontSize = 12,
     anchorPoint = "CENTER", -- CENTER, TOPLEFT, TOPRIGHT, BOTTOMLEFT, BOTTOMRIGHT
@@ -506,7 +505,7 @@ local function UpdateCoinageDisplay()
 end
 
 -- Apply settings to the frame
-local function ApplyCoinageSettings()
+function ApplyCoinageSettings()
   if not coinageFrame or not anchorFrame then return end
   
   local settings = PPT_UI_Settings.coinageTracker
@@ -526,12 +525,11 @@ local function ApplyCoinageSettings()
   -- Apply alpha setting
   coinageFrame:SetAlpha(settings.alpha or 1.0)
   
-  -- Apply background color setting (force pure black to match toasts)
+  -- Apply background color setting (use background opacity setting)
   if coinageFrame.bg then
-    -- Always use pure black to match toast styling
-    local bgColor = {0, 0, 0, 0.95} -- Pure black background
-    settings.backgroundColor = bgColor -- Update saved settings
-    coinageFrame.bg:SetColorTexture(unpack(bgColor))
+    -- Use background opacity setting for consistency
+    local opacity = (PPT_BackgroundOpacity or 85) / 100
+    coinageFrame.bg:SetColorTexture(0, 0, 0, opacity) -- Black background with configurable opacity
   end
   
   -- Update border color based on session state
@@ -545,21 +543,22 @@ function UpdateCoinageBorderColor()
   -- Check if session is active (sessionActive is global from Session.lua)
   local isSessionActive = sessionActive or false
   local inCombat = IsInCombat and IsInCombat() or false
+  local opacity = (PPT_BackgroundOpacity or 85) / 100
   
   DebugPrint("UpdateCoinageBorderColor: sessionActive=%s, inCombat=%s, sessionJustEnded=%s", 
     tostring(isSessionActive), tostring(inCombat), tostring(sessionJustEnded))
   
   if isSessionActive then
     -- Active session: blue border (matches session toast)
-    coinageFrame.border:SetColorTexture(0.3, 0.6, 1, 1)
+    coinageFrame.border:SetColorTexture(0.3, 0.6, 1, opacity)
     DebugPrint("Border set to BLUE (active session)")
   elseif sessionJustEnded and inCombat then
     -- Session ended but in combat: dull orange border
-    coinageFrame.border:SetColorTexture(0.8, 0.5, 0.2, 1)
+    coinageFrame.border:SetColorTexture(0.8, 0.5, 0.2, opacity)
     DebugPrint("Border set to ORANGE (session ended in combat)")
   else
     -- Idle: mid grey border
-    coinageFrame.border:SetColorTexture(0.5, 0.5, 0.5, 1)
+    coinageFrame.border:SetColorTexture(0.5, 0.5, 0.5, opacity)
     DebugPrint("Border set to GREY (idle)")
   end
 end

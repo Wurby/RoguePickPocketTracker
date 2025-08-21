@@ -21,6 +21,7 @@ PPT_DataVersion          = PPT_DataVersion or 0
 PPT_Achievements         = type(PPT_Achievements) == "table" and PPT_Achievements or {}
 PPT_CompletedAchievements = type(PPT_CompletedAchievements) == "table" and PPT_CompletedAchievements or {}
 PPT_AlertOpacity         = tonumber(PPT_AlertOpacity) or 80
+PPT_BackgroundOpacity    = tonumber(PPT_BackgroundOpacity) or 85
 PPT_LastSessionData      = type(PPT_LastSessionData) == "table" and PPT_LastSessionData or nil
 -- Stopwatch/Tracking Feature Variables
 PPT_StopwatchEnabled     = (PPT_StopwatchEnabled ~= nil) and PPT_StopwatchEnabled or true
