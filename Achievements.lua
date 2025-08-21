@@ -186,13 +186,8 @@ end
 
 -- Celebration helper function
 function celebrateAchievement(achievement)
-  -- Show fancy achievement toast notification
-  ShowToast({
-    type = "achievement",
-    name = achievement.name,
-    description = achievement.description,
-    icon = achievement.icon
-  })
+  -- Show fancy achievement toast notification using new system
+  ShowAchievementCompletionToast(achievement.id)
   
   -- Play sound if available
   if PlaySoundFile then

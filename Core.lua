@@ -7,7 +7,9 @@
 PPT_ShowMsg              = (PPT_ShowMsg ~= nil) and PPT_ShowMsg or true
 PPT_Debug                = PPT_Debug or false  -- Disable debug by default
 PPT_ShareGroup           = (PPT_ShareGroup ~= nil) and PPT_ShareGroup or false
+PPT_ShowToasts           = (PPT_ShowToasts ~= nil) and PPT_ShowToasts or true
 PPT_ShowSessionToasts    = (PPT_ShowSessionToasts ~= nil) and PPT_ShowSessionToasts or true
+PPT_ShowAchievementToasts = (PPT_ShowAchievementToasts ~= nil) and PPT_ShowAchievementToasts or true
 PPT_TotalCopper          = tonumber(PPT_TotalCopper) or 0
 PPT_TotalAttempts        = tonumber(PPT_TotalAttempts) or 0
 PPT_SuccessfulAttempts   = tonumber(PPT_SuccessfulAttempts) or 0

@@ -113,46 +113,14 @@ end
 
 -- Show session completion toast notification
 function ShowSessionToast(useStoredData)
-  -- Only show if session toasts are enabled
-  if not PPT_ShowSessionToasts then
-    return
-  end
+  DebugPrint("ShowSessionToast called with useStoredData: %s", tostring(useStoredData))
   
-  local copper, itemsCount, items
-  
-  if useStoredData and PPT_LastSessionData then
-    -- Use stored session data for manual commands
-    copper = PPT_LastSessionData.copper or 0
-    itemsCount = PPT_LastSessionData.itemsCount or 0
-    items = PPT_LastSessionData.items or {}
+  -- Use the new session toast system
+  if useStoredData then
+    ShowStoredSessionToast()
   else
-    -- Use current session data for real-time display
-    copper = sessionCopper or 0
-    itemsCount = sessionItemsCount or 0
-    items = sessionItems or {}
+    ShowSessionCompletionToast()
   end
-  
-  -- Build the session summary for the toast
-  local sessionSummary = "+" .. coinsToString(copper)
-  
-  local description = ""
-  if itemsCount > 0 then
-    local itemLines = {}
-    for name, cnt in pairs(items) do 
-      table.insert(itemLines, string.format("%s x%d", name, cnt)) 
-    end
-    table.sort(itemLines)
-    description = table.concat(itemLines, ", ")
-  else
-    description = "No items obtained this session"
-  end
-  
-  ShowToast({
-    type = "session",
-    name = sessionSummary,
-    description = description,
-    icon = "Interface\\Icons\\Ability_Stealth"
-  }, true) -- bypass combat check - session toasts are managed separately
 end
 
 local function getGroupChannel()
@@ -285,6 +253,11 @@ function startSession()
   sessionZone = getCurrentZone()
   sessionLocation = getCurrentLocation()
   sessionStartTime = GetTime()
+  
+  -- Update UI border color to blue when session starts
+  if UpdateCoinageBorderColor then
+    UpdateCoinageBorderColor()
+  end
   DebugPrint("Stealth: start at %s", sessionLocation)
 end
 
@@ -441,13 +414,18 @@ function finalizeSession(reasonIfZero)
       
       -- Only show toast if we haven't already shown it (e.g., on combat end)
       if not sessionToastShown then
+        DebugPrint("Session finalize: preparing to show session toast")
         -- Check if in combat - if so, queue the toast for later
         if UnitAffectingCombat and UnitAffectingCombat("player") then
           pendingSessionToast = true
           DebugPrint("Session toast queued - waiting for combat to end")
         else
+          DebugPrint("Session toast showing immediately")
           ShowSessionToast() -- Show toast notification immediately
+          sessionToastShown = true
         end
+      else
+        DebugPrint("Session toast already shown, skipping")
       end
       ShareSummaryAndStats(nil, summaryMsg)
       PPT_LastSummary = summaryMsg
@@ -465,6 +443,16 @@ function finalizeSession(reasonIfZero)
   sessionActive = false
   inStealth = false
   lastMoney = nil
+  
+  -- Set flag for orange border state if ending during combat
+  if sessionJustEnded ~= nil then -- Check if UI.lua is loaded
+    sessionJustEnded = IsInCombat() or false
+  end
+  
+  -- Update UI border color when session ends
+  if UpdateCoinageBorderColor then
+    UpdateCoinageBorderColor()
+  end
   
   -- Set session end time but don't start timer - just keep info available
   sessionEndTime = GetTime()

@@ -2,6 +2,13 @@
 -- Draggable UI elements for RoguePickPocketTracker
 
 ------------------------------------------------------------
+--                   GLOBAL VARIABLES
+------------------------------------------------------------
+
+-- Track when session just ended (for combat orange state)
+sessionJustEnded = false
+
+------------------------------------------------------------
 --                   SAVED VARIABLES
 ------------------------------------------------------------
 PPT_UI_Settings = PPT_UI_Settings or {
@@ -11,7 +18,7 @@ PPT_UI_Settings = PPT_UI_Settings or {
     top = 100,
     scale = 1.0,
     alpha = 1.0,
-    backgroundColor = {0.15, 0.15, 0.15, 1}, -- Default dark grey
+    backgroundColor = {0, 0, 0, 0.95}, -- Pure black background to match toasts
     showBackground = true,
     fontSize = 12,
     anchorPoint = "CENTER", -- CENTER, TOPLEFT, TOPRIGHT, BOTTOMLEFT, BOTTOMRIGHT
@@ -138,8 +145,16 @@ local function PositionFrameFromAnchor()
 end
 
 -- Calculate size and apply it without moving the anchor
+local lastSizeCalculation = 0
 local function CalculateAndApplyContentSize()
   if not coinageFrame or not anchorFrame then return end
+  
+  -- Rate limit size calculations to prevent spam during frequent updates
+  local now = GetTime()
+  if now - lastSizeCalculation < 0.1 then
+    return -- Skip if we calculated size recently
+  end
+  lastSizeCalculation = now
   
   -- Force text refresh to ensure width calculations are accurate
   if coinageFrame.trackingInfo then coinageFrame.trackingInfo:SetText(coinageFrame.trackingInfo:GetText() or "") end
@@ -201,12 +216,7 @@ local function CalculateAndApplyContentSize()
   -- Account for buttons (50 + 5 gap + 50 = 105 pixels) - only if they're actually visible
   if PPT_StopwatchEnabled and coinageFrame.startBtn and coinageFrame.startBtn:IsVisible() then
     maxContentWidth = math.max(maxContentWidth, 105)
-    DebugPrint("UI: Including button width (105px) in calculation")
-  else
-    DebugPrint("UI: Buttons not visible, excluding from width calculation")
   end
-  
-  DebugPrint("UI: Max content width calculated: %.1f", maxContentWidth)
   
   local newWidth = maxContentWidth + (padding * 2)
   
@@ -234,16 +244,6 @@ local function CalculateAndApplyContentSize()
   -- Store current size to prevent unnecessary repositioning
   local currentWidth, currentHeight = coinageFrame:GetSize()
   
-  -- Debug output for size changes
-  DebugPrint("UI: Size calculation - Current: %.1fx%.1f, New: %.1fx%.1f", 
-            currentWidth, currentHeight, newWidth, newHeight)
-  DebugPrint("UI: Visible elements - tracking:%s, timer:%s, session:%s, controls:%s, buttons:%s", 
-            coinageFrame.trackingInfo and coinageFrame.trackingInfo:IsVisible() and "Y" or "N",
-            coinageFrame.timerDisplay and coinageFrame.timerDisplay:IsVisible() and "Y" or "N", 
-            coinageFrame.sessionInfo and coinageFrame.sessionInfo:IsVisible() and "Y" or "N",
-            coinageFrame.controlsHeader and coinageFrame.controlsHeader:IsVisible() and "Y" or "N",
-            coinageFrame.startBtn and coinageFrame.startBtn:IsVisible() and "Y" or "N")
-  
   -- Only update size and position if they actually changed
   if math.abs(currentWidth - newWidth) > 1 or math.abs(currentHeight - newHeight) > 1 then
     DebugPrint("UI: Resizing frame from %.1fx%.1f to %.1fx%.1f", currentWidth, currentHeight, newWidth, newHeight)
@@ -252,8 +252,6 @@ local function CalculateAndApplyContentSize()
     
     -- Then position relative to anchor
     PositionFrameFromAnchor()
-  else
-    DebugPrint("UI: No size change needed")
   end
 end
 
@@ -272,74 +270,16 @@ local function CreateCoinageTracker()
   coinageFrame:SetFrameStrata("MEDIUM") -- Above basic UI elements
   coinageFrame:SetFrameLevel(100) -- High level within the strata
   
-  -- Main background (color will be set by ApplyCoinageSettings)
-  coinageFrame.bg = coinageFrame:CreateTexture(nil, "BACKGROUND")
-  coinageFrame.bg:SetAllPoints()
+  -- Border (bottom layer) - exactly like toast system
+  coinageFrame.border = coinageFrame:CreateTexture(nil, "BACKGROUND")
+  coinageFrame.border:SetAllPoints()
+  coinageFrame.border:SetColorTexture(0.5, 0.5, 0.5, 1) -- Start with mid grey (will be updated by UpdateCoinageBorderColor)
+  
+  -- Background (top layer, inset to show border) - exactly like toast system
+  coinageFrame.bg = coinageFrame:CreateTexture(nil, "BORDER")
+  coinageFrame.bg:SetPoint("TOPLEFT", 2, -2)
+  coinageFrame.bg:SetPoint("BOTTOMRIGHT", -2, 2)
   -- Background color will be applied in ApplyCoinageSettings()
-  
-  -- Create border effect like toast notifications with corners
-  local borderSize = 2
-  
-  -- Top border
-  coinageFrame.borderTop = coinageFrame:CreateTexture(nil, "BORDER")
-  coinageFrame.borderTop:SetHeight(borderSize)
-  coinageFrame.borderTop:SetPoint("TOPLEFT", borderSize, -borderSize)
-  coinageFrame.borderTop:SetPoint("TOPRIGHT", -borderSize, -borderSize)
-  coinageFrame.borderTop:SetColorTexture(0.6, 0.6, 0.6, 1) -- Grey border
-  
-  -- Bottom border
-  coinageFrame.borderBottom = coinageFrame:CreateTexture(nil, "BORDER")
-  coinageFrame.borderBottom:SetHeight(borderSize)
-  coinageFrame.borderBottom:SetPoint("BOTTOMLEFT", borderSize, borderSize)
-  coinageFrame.borderBottom:SetPoint("BOTTOMRIGHT", -borderSize, borderSize)
-  coinageFrame.borderBottom:SetColorTexture(0.6, 0.6, 0.6, 1)
-  
-  -- Left border
-  coinageFrame.borderLeft = coinageFrame:CreateTexture(nil, "BORDER")
-  coinageFrame.borderLeft:SetWidth(borderSize)
-  coinageFrame.borderLeft:SetPoint("TOPLEFT", 0, 0)
-  coinageFrame.borderLeft:SetPoint("BOTTOMLEFT", 0, 0)
-  coinageFrame.borderLeft:SetColorTexture(0.6, 0.6, 0.6, 1)
-  
-  -- Right border
-  coinageFrame.borderRight = coinageFrame:CreateTexture(nil, "BORDER")
-  coinageFrame.borderRight:SetWidth(borderSize)
-  coinageFrame.borderRight:SetPoint("TOPRIGHT", 0, 0)
-  coinageFrame.borderRight:SetPoint("BOTTOMRIGHT", 0, 0)
-  coinageFrame.borderRight:SetColorTexture(0.6, 0.6, 0.6, 1)
-  
-  -- Corner pieces for rounded effect like toast
-  local cornerSize = 6
-  
-  -- Top-left corner
-  coinageFrame.cornerTL = coinageFrame:CreateTexture(nil, "ARTWORK")
-  coinageFrame.cornerTL:SetSize(cornerSize, cornerSize)
-  coinageFrame.cornerTL:SetPoint("TOPLEFT", 0, 0)
-  coinageFrame.cornerTL:SetColorTexture(0.6, 0.6, 0.6, 1)
-  
-  -- Top-right corner
-  coinageFrame.cornerTR = coinageFrame:CreateTexture(nil, "ARTWORK")
-  coinageFrame.cornerTR:SetSize(cornerSize, cornerSize)
-  coinageFrame.cornerTR:SetPoint("TOPRIGHT", 0, 0)
-  coinageFrame.cornerTR:SetColorTexture(0.6, 0.6, 0.6, 1)
-  
-  -- Bottom-left corner
-  coinageFrame.cornerBL = coinageFrame:CreateTexture(nil, "ARTWORK")
-  coinageFrame.cornerBL:SetSize(cornerSize, cornerSize)
-  coinageFrame.cornerBL:SetPoint("BOTTOMLEFT", 0, 0)
-  coinageFrame.cornerBL:SetColorTexture(0.6, 0.6, 0.6, 1)
-  
-  -- Bottom-right corner
-  coinageFrame.cornerBR = coinageFrame:CreateTexture(nil, "ARTWORK")
-  coinageFrame.cornerBR:SetSize(cornerSize, cornerSize)
-  coinageFrame.cornerBR:SetPoint("BOTTOMRIGHT", 0, 0)
-  coinageFrame.cornerBR:SetColorTexture(0.6, 0.6, 0.6, 1)
-  
-  -- Subtle inner glow like toast
-  coinageFrame.innerGlow = coinageFrame:CreateTexture(nil, "BACKGROUND", nil, 1)
-  coinageFrame.innerGlow:SetPoint("TOPLEFT", 4, -4)
-  coinageFrame.innerGlow:SetPoint("BOTTOMRIGHT", -4, 4)
-  coinageFrame.innerGlow:SetColorTexture(0.25, 0.25, 0.25, 0.3) -- Subtle grey glow, no gold
   
   -- Title (neutral color instead of gold)
   coinageFrame.title = coinageFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -563,13 +503,6 @@ local function UpdateCoinageDisplay()
   
   -- Apply dynamic sizing and positioning
   CalculateAndApplyContentSize()
-  
-  -- Force a more reliable resize after all visibility changes complete
-  C_Timer.After(0.1, function()
-    if coinageFrame and coinageFrame:IsVisible() then
-      CalculateAndApplyContentSize()
-    end
-  end)
 end
 
 -- Apply settings to the frame
@@ -593,14 +526,41 @@ local function ApplyCoinageSettings()
   -- Apply alpha setting
   coinageFrame:SetAlpha(settings.alpha or 1.0)
   
-  -- Apply background color setting
+  -- Apply background color setting (force pure black to match toasts)
   if coinageFrame.bg then
-    local bgColor = settings.backgroundColor or {0.15, 0.15, 0.15, 1} -- Default dark grey
-    -- Ensure the backgroundColor is saved to settings if it doesn't exist
-    if not settings.backgroundColor then
-      settings.backgroundColor = {0.15, 0.15, 0.15, 1}
-    end
+    -- Always use pure black to match toast styling
+    local bgColor = {0, 0, 0, 0.95} -- Pure black background
+    settings.backgroundColor = bgColor -- Update saved settings
     coinageFrame.bg:SetColorTexture(unpack(bgColor))
+  end
+  
+  -- Update border color based on session state
+  UpdateCoinageBorderColor()
+end
+
+-- Update border color based on session state
+function UpdateCoinageBorderColor()
+  if not coinageFrame or not coinageFrame.border then return end
+  
+  -- Check if session is active (sessionActive is global from Session.lua)
+  local isSessionActive = sessionActive or false
+  local inCombat = IsInCombat and IsInCombat() or false
+  
+  DebugPrint("UpdateCoinageBorderColor: sessionActive=%s, inCombat=%s, sessionJustEnded=%s", 
+    tostring(isSessionActive), tostring(inCombat), tostring(sessionJustEnded))
+  
+  if isSessionActive then
+    -- Active session: blue border (matches session toast)
+    coinageFrame.border:SetColorTexture(0.3, 0.6, 1, 1)
+    DebugPrint("Border set to BLUE (active session)")
+  elseif sessionJustEnded and inCombat then
+    -- Session ended but in combat: dull orange border
+    coinageFrame.border:SetColorTexture(0.8, 0.5, 0.2, 1)
+    DebugPrint("Border set to ORANGE (session ended in combat)")
+  else
+    -- Idle: mid grey border
+    coinageFrame.border:SetColorTexture(0.5, 0.5, 0.5, 1)
+    DebugPrint("Border set to GREY (idle)")
   end
 end
 
