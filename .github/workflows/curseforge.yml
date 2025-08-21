@@ -42,8 +42,12 @@ jobs:
         PACKAGE_NAME="RoguePickPocketTracker"
         mkdir -p "$PACKAGE_NAME"
         
-        # Copy all addon files
-        cp *.lua *.toc "$PACKAGE_NAME/"
+        # Copy all addon files with new folder structure
+        cp *.toc "$PACKAGE_NAME/"
+        cp -r Core/ "$PACKAGE_NAME/"
+        cp -r Toasts/ "$PACKAGE_NAME/"
+        cp -r UI/ "$PACKAGE_NAME/"
+        cp -r Options/ "$PACKAGE_NAME/"
         
         # Process .pkgmeta if it exists (CurseForge will handle this automatically)
         if [ -f ".pkgmeta" ]; then

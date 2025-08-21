@@ -36,8 +36,12 @@ jobs:
         PACKAGE_NAME="RoguePickPocketTracker-$VERSION"
         mkdir -p "$PACKAGE_NAME"
         
-        # Copy addon files (exclude git and github files)
-        cp *.lua *.toc "$PACKAGE_NAME/"
+        # Copy addon files with new folder structure
+        cp *.toc "$PACKAGE_NAME/"
+        cp -r Core/ "$PACKAGE_NAME/"
+        cp -r Toasts/ "$PACKAGE_NAME/"
+        cp -r UI/ "$PACKAGE_NAME/"
+        cp -r Options/ "$PACKAGE_NAME/"
         
         # Replace version token in TOC file
         sed -i "s/@project-version@/$VERSION/g" "$PACKAGE_NAME/RoguePickPocketTracker.toc"

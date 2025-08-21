@@ -10,6 +10,9 @@ ignore:
   - .gitignore
   - README.md
   - .pkgmeta
+  - "*/README.md"  # Ignore README files in subdirectories
+  - todos.txt
+  - buildAndRelease.sh
 
 # Optional: Include license file
 # license-output: LICENSE.txt
